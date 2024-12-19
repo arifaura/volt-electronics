@@ -14,7 +14,7 @@ import { useAuth } from '../../context/AuthContext';
 import logo from '../../assets/images/logo.svg';
 
 export default function Header() {
-  const { items } = useCart();
+  const { items = [] } = useCart();
   const { user, logout } = useAuth();
   
   const navigation = [
@@ -148,7 +148,7 @@ export default function Header() {
                       className="p-2 text-gray-700 hover:text-blue-600 relative"
                     >
                       <ShoppingCartIcon className="h-6 w-6" />
-                      {items.length > 0 && (
+                      {items && items.length > 0 && (
                         <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                           {items.length}
                         </span>

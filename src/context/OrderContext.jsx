@@ -1,45 +1,29 @@
-import { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState } from 'react';
+import PropTypes from 'prop-types';
 
-const OrderContext = createContext({
-  orders: [],
-  addOrder: () => {},
-  updateOrder: () => {},
-});
+const OrderContext = createContext();
+
+export function useOrder() {
+  return useContext(OrderContext);
+}
 
 export function OrderProvider({ children }) {
-  const [orders, setOrders] = useState([
-    {
-      id: 1,
-      customer: { name: 'John Doe', email: 'john@example.com' },
-      date: new Date(),
-      total: 299.99,
-      status: 'pending'
-    },
-    {
-      id: 2,
-      customer: { name: 'Jane Smith', email: 'jane@example.com' },
-      date: new Date(),
-      total: 499.99,
-      status: 'completed'
-    }
-  ]);
+  const [orders, setOrders] = useState([]);
 
-  const addOrder = (order) => {
-    // In a real app, make an API call
-    setOrders([...orders, { ...order, id: Date.now(), status: 'pending' }]);
-  };
-
-  const updateOrder = (orderId, updates) => {
-    setOrders(orders.map(order => 
-      order.id === orderId ? { ...order, ...updates } : order
-    ));
+  const value = {
+    orders,
+    setOrders
   };
 
   return (
-    <OrderContext.Provider value={{ orders, addOrder, updateOrder }}>
+    <OrderContext.Provider value={value}>
       {children}
     </OrderContext.Provider>
   );
 }
 
-export const useOrders = () => useContext(OrderContext); 
+OrderProvider.propTypes = {
+  children: PropTypes.node.isRequired
+};
+
+export default OrderContext; 
