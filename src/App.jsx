@@ -14,6 +14,7 @@ import ScrollToTop from './components/utils/ScrollToTop';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import NotFound from './pages/NotFound';
 import Profile from './pages/Profile';
+import OrderDetails from './pages/OrderDetails';
 
 // Admin imports
 import AdminLayout from './components/admin/AdminLayout';
@@ -76,6 +77,15 @@ function App() {
           } />
           <Route path="*" element={<NotFound />} />
         </Route>
+
+        <Route 
+          path="/orders/:orderId" 
+          element={
+            <ProtectedRoute>
+              <OrderDetails />
+            </ProtectedRoute>
+          } 
+        />
       </Routes>
     </>
   );

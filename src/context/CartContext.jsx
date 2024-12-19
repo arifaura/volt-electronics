@@ -21,42 +21,58 @@ export function CartProvider({ children }) {
     tokenUtils.setCart(items);
   }, [items]);
 
-  useEffect(() => {
-    const token = tokenUtils.getToken();
-    if (token && items.length > 0) {
-      api.post('/cart/sync', { items })
-        .catch(error => console.error('Cart sync failed:', error));
-    }
-  }, [items]);
-
-  const addToCart = async (product) => {
-    try {
-      const newItems = [...items, product];
-      setItems(newItems);
-      tokenUtils.setCart(newItems);
-
-      const token = tokenUtils.getToken();
-      if (token) {
-        await api.post('/cart/add', { productId: product.id });
+  const addToCart = (product) => {
+    setItems(prevItems => {
+      const existingItem = prevItems.find(item => item.id === product.id);
+      
+      if (existingItem) {
+        return prevItems.map(item =>
+          item.id === product.id
+            ? { ...item, quantity: Math.min(item.quantity + 1, 10) }
+            : item
+        );
       }
-    } catch (error) {
-      console.error('Add to cart failed:', error);
-      toast.error('Failed to add item to cart');
-    }
+      
+      return [...prevItems, { ...product, quantity: 1 }];
+    });
+  };
+
+  const updateQuantity = (itemId, newQuantity) => {
+    if (newQuantity < 1 || newQuantity > 10) return;
+    
+    setItems(prevItems =>
+      prevItems.map(item =>
+        item.id === itemId
+          ? { ...item, quantity: newQuantity }
+          : item
+      )
+    );
   };
 
   const removeFromCart = (itemId) => {
     setItems(prevItems => prevItems.filter(item => item.id !== itemId));
   };
 
-  const value = {
-    items,
-    addToCart,
-    removeFromCart
+  const clearCart = () => {
+    setItems([]);
+    tokenUtils.setCart([]);
+  };
+
+  const calculateTotal = () => {
+    return items.reduce((total, item) => {
+      return total + (item.price * item.quantity);
+    }, 0);
   };
 
   return (
-    <CartContext.Provider value={value}>
+    <CartContext.Provider value={{
+      items,
+      addToCart,
+      removeFromCart,
+      updateQuantity,
+      clearCart,
+      calculateTotal
+    }}>
       {children}
     </CartContext.Provider>
   );

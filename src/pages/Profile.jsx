@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { doc, updateDoc, collection, getDocs, addDoc, query, where, orderBy, writeBatch, deleteDoc } from 'firebase/firestore';
+import { doc, updateDoc, collection, getDocs, addDoc, query, where, orderBy, writeBatch, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { toast } from 'react-hot-toast';
 import { 
@@ -12,11 +12,14 @@ import {
   CreditCardIcon,
   DeviceMobileIcon
 } from '@heroicons/react/outline';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 export default function Profile() {
   const { user, updatePassword } = useAuth();
-  const [activeTab, setActiveTab] = useState('profile');
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState(() => {
+    return location.state?.activeTab || 'profile';
+  });
   const [loading, setLoading] = useState(false);
   const [addresses, setAddresses] = useState([]);
   const [showAddAddress, setShowAddAddress] = useState(false);
@@ -79,57 +82,66 @@ export default function Profile() {
     fetchAddresses();
   }, [user.uid]);
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      if (activeTab === 'orders') {
-        setOrdersLoading(true);
+  const fetchOrders = async () => {
+    if (activeTab === 'orders') {
+      setOrdersLoading(true);
+      try {
+        const ordersRef = collection(db, 'orders');
         try {
-          const ordersRef = collection(db, 'orders');
+          // Try with the indexed query first
           const q = query(
             ordersRef,
-            where('userId', '==', user.uid),
+            where('customerInfo.userId', '==', user.uid),
             orderBy('createdAt', 'desc')
           );
-          
-          // Add error handling for missing index
-          try {
-            const snapshot = await getDocs(q);
+          const snapshot = await getDocs(q);
+          const ordersList = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            createdAt: doc.data().createdAt?.toDate().toLocaleString()
+          }));
+          setOrders(ordersList);
+        } catch (indexError) {
+          if (indexError.code === 'failed-precondition') {
+            // Fallback to a simple query while index is building
+            console.warn('Index not ready, using fallback query');
+            const simpleQuery = query(
+              ordersRef,
+              where('customerInfo.userId', '==', user.uid)
+            );
+            const snapshot = await getDocs(simpleQuery);
             const ordersList = snapshot.docs.map(doc => ({
               id: doc.id,
               ...doc.data(),
-              date: new Date(doc.data().createdAt.toDate()).toLocaleDateString()
-            }));
+              createdAt: doc.data().createdAt?.toDate().toLocaleString()
+            }))
+            .sort((a, b) => {
+              const dateA = new Date(a.createdAt);
+              const dateB = new Date(b.createdAt);
+              return dateB - dateA;
+            });
             setOrders(ordersList);
-          } catch (indexError) {
-            if (indexError.code === 'failed-precondition') {
-              // Handle missing index error
-              console.warn('Index not yet ready. Fetching without ordering...');
-              // Fallback query without ordering
-              const basicQuery = query(
-                ordersRef,
-                where('userId', '==', user.uid)
-              );
-              const basicSnapshot = await getDocs(basicQuery);
-              const basicOrdersList = basicSnapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data(),
-                date: new Date(doc.data().createdAt.toDate()).toLocaleDateString()
-              })).sort((a, b) => b.createdAt - a.createdAt);
-              setOrders(basicOrdersList);
-            } else {
-              throw indexError;
-            }
+          } else {
+            throw indexError;
           }
-        } catch (error) {
-          console.error('Error fetching orders:', error);
-          toast.error('Failed to load orders');
-          setOrders([]);
-        } finally {
-          setOrdersLoading(false);
         }
+      } catch (error) {
+        console.error('Error fetching orders:', error);
+        toast.error('Failed to load orders');
+        setOrders([]);
+      } finally {
+        setOrdersLoading(false);
       }
-    };
+    }
+  };
 
+  useEffect(() => {
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+    }
+  }, [location.state]);
+
+  useEffect(() => {
     fetchOrders();
   }, [user.uid, activeTab]);
 
@@ -629,17 +641,25 @@ export default function Profile() {
                             <p className="text-sm font-medium text-gray-900">
                               Order #{order.id.slice(-8)}
                             </p>
-                            <p className="text-sm text-gray-500">{order.date}</p>
+                            <p className="text-sm text-gray-500">{order.createdAt}</p>
+                            <p className="text-sm text-gray-600 mt-1">
+                              Ordered by: {order.customerInfo?.name || 'N/A'}
+                            </p>
                           </div>
                           <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                             getOrderStatusColor(order.status)
-                              }`}>
-                                {order.status}
-                              </span>
+                          }`}>
+                            {order.status}
+                          </span>
                         </div>
                         <div className="mt-4">
                           <p className="text-sm text-gray-600">
-                            {order.items?.length || 0} items • Total: ${order.total?.toFixed(2)}
+                            {order.orderSummary?.itemCount || 0} items • 
+                            Subtotal: ${order.orderSummary?.subtotal?.toFixed(2) || '0.00'} • 
+                            Shipping: ${order.orderSummary?.shipping?.toFixed(2) || '0.00'}
+                          </p>
+                          <p className="text-sm font-medium text-gray-900 mt-1">
+                            Total: ${order.orderSummary?.total?.toFixed(2) || '0.00'}
                           </p>
                         </div>
                         <div className="mt-4">
