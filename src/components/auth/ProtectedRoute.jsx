@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import Loader from '../utils/Loader';
 import PropTypes from 'prop-types';
 
-export default function ProtectedRoute({ children, requireAdmin }) {
+export default function ProtectedRoute({ children, requireAdmin = false }) {
   const { user, isAdmin, loading } = useAuth();
 
   if (loading) {
@@ -24,8 +24,4 @@ export default function ProtectedRoute({ children, requireAdmin }) {
 ProtectedRoute.propTypes = {
   children: PropTypes.node.isRequired,
   requireAdmin: PropTypes.bool
-};
-
-ProtectedRoute.defaultProps = {
-  requireAdmin: false
 }; 

@@ -11,7 +11,7 @@ import {
 import { Fragment } from 'react';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
-import logo from '../../assets/images/logo.svg';
+import logo from '../../assets/images/logo1.svg';
 
 export default function Header() {
   const { items = [] } = useCart();
@@ -39,8 +39,9 @@ export default function Header() {
         <>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
+              {/* Logo */}
               <div className="flex items-center">
-                <div className="flex-shrink-0 flex items-center">
+                <div className="flex-shrink-0">
                   <Link to="/">
                     <img
                       className="h-8 w-auto"
@@ -49,6 +50,7 @@ export default function Header() {
                     />
                   </Link>
                 </div>
+                {/* Desktop Navigation */}
                 <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                   {navigation.map((item) => (
                     <Link
@@ -62,28 +64,14 @@ export default function Header() {
                 </div>
               </div>
 
-              {/* Mobile menu button */}
-              <div className="flex items-center sm:hidden">
-                <Disclosure.Button className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100">
-                  <span className="sr-only">Open main menu</span>
-                  {open ? (
-                    <XIcon className="block h-6 w-6" aria-hidden="true" />
-                  ) : (
-                    <MenuIcon className="block h-6 w-6" aria-hidden="true" />
-                  )}
-                </Disclosure.Button>
-              </div>
-
-              <div className="flex items-center">
+              {/* Desktop Right Section */}
+              <div className="hidden sm:flex sm:items-center">
                 {user ? (
                   <div className="flex items-center space-x-4">
-                    {/* Profile Dropdown */}
                     <Menu as="div" className="relative">
-                      <Menu.Button className="flex items-center space-x-2 text-gray-700 hover:text-gray-900">
-                        <UserCircleIcon className="h-8 w-8" />
-                        <span className="hidden md:block text-sm font-medium">
-                          {user.name || user.email}
-                        </span>
+                      <Menu.Button className="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        <span className="sr-only">Open user menu</span>
+                        <UserCircleIcon className="h-8 w-8 text-gray-600" />
                       </Menu.Button>
                       <Transition
                         as={Fragment}
@@ -96,21 +84,6 @@ export default function Header() {
                       >
                         <Menu.Items className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
                           <div className="py-1">
-                            {user.role === 'admin' && (
-                              <Menu.Item>
-                                {({ active }) => (
-                                  <Link
-                                    to="/admin"
-                                    className={`${
-                                      active ? 'bg-gray-100' : ''
-                                    } flex px-4 py-2 text-sm text-gray-700`}
-                                  >
-                                    <CogIcon className="h-5 w-5 mr-2" />
-                                    Admin Dashboard
-                                  </Link>
-                                )}
-                              </Menu.Item>
-                            )}
                             <Menu.Item>
                               {({ active }) => (
                                 <Link
@@ -141,8 +114,6 @@ export default function Header() {
                         </Menu.Items>
                       </Transition>
                     </Menu>
-
-                    {/* Cart Icon */}
                     <Link
                       to="/cart"
                       className="p-2 text-gray-700 hover:text-blue-600 relative"
@@ -159,34 +130,92 @@ export default function Header() {
                   <div className="flex items-center space-x-4">
                     <Link
                       to="/login"
-                      className="text-gray-700 hover:text-blue-600"
+                      className="text-gray-900 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
                     >
-                      Login
+                      Sign in
                     </Link>
                     <Link
                       to="/signup"
-                      className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                      className="bg-blue-600 text-white hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium"
                     >
                       Sign up
                     </Link>
                   </div>
                 )}
               </div>
+
+              {/* Mobile menu button */}
+              <div className="flex items-center sm:hidden">
+                <Disclosure.Button className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100">
+                  <span className="sr-only">Open main menu</span>
+                  {open ? (
+                    <XIcon className="block h-6 w-6" aria-hidden="true" />
+                  ) : (
+                    <MenuIcon className="block h-6 w-6" aria-hidden="true" />
+                  )}
+                </Disclosure.Button>
+              </div>
             </div>
           </div>
 
-          {/* Mobile menu panel */}
+          {/* Mobile menu */}
           <Disclosure.Panel className="sm:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1">
               {navigation.map((item) => (
-                <Link
+                <Disclosure.Button
                   key={item.name}
+                  as={Link}
                   to={item.href}
-                  className="text-gray-900 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium"
+                  className="text-gray-900 hover:bg-gray-50 block px-3 py-2 rounded-md text-base font-medium"
                 >
                   {item.name}
-                </Link>
+                </Disclosure.Button>
               ))}
+            </div>
+            {/* Mobile menu authentication */}
+            <div className="pt-4 pb-3 border-t border-gray-200">
+              {user ? (
+                <div className="px-2 space-y-1">
+                  <Disclosure.Button
+                    as={Link}
+                    to="/profile"
+                    className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
+                  >
+                    Profile
+                  </Disclosure.Button>
+                  <Disclosure.Button
+                    as={Link}
+                    to="/cart"
+                    className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
+                  >
+                    Cart {items.length > 0 && `(${items.length})`}
+                  </Disclosure.Button>
+                  <Disclosure.Button
+                    as="button"
+                    onClick={handleLogout}
+                    className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
+                  >
+                    Sign out
+                  </Disclosure.Button>
+                </div>
+              ) : (
+                <div className="px-2 space-y-1">
+                  <Disclosure.Button
+                    as={Link}
+                    to="/login"
+                    className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
+                  >
+                    Sign in
+                  </Disclosure.Button>
+                  <Disclosure.Button
+                    as={Link}
+                    to="/signup"
+                    className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
+                  >
+                    Sign up
+                  </Disclosure.Button>
+                </div>
+              )}
             </div>
           </Disclosure.Panel>
         </>

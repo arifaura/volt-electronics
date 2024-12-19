@@ -7,17 +7,25 @@ import {
   signOut,
   onAuthStateChanged,
   GoogleAuthProvider,
-  signInWithPopup
+  signInWithPopup,
+  sendPasswordResetEmail,
+  updatePassword as firebaseUpdatePassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential
 } from 'firebase/auth';
-import { auth, db } from '../config/firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { auth, db } from '../config/firebase';
+import { tokenUtils } from '../utils/tokenUtils';
 import PropTypes from 'prop-types';
-import Loader from '../components/utils/Loader';
 
 const AuthContext = createContext();
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 }
 
 export function AuthProvider({ children }) {
@@ -26,177 +34,80 @@ export function AuthProvider({ children }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      try {
-        if (firebaseUser) {
-          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-          
-          if (userDoc.exists()) {
-            setUser({
-              uid: firebaseUser.uid,
-              email: firebaseUser.email,
-              ...userDoc.data()
-            });
-          } else {
-            // If no user document exists, create one
-            const userData = {
-              uid: firebaseUser.uid,
-              email: firebaseUser.email,
-              name: firebaseUser.displayName || '',
-              role: 'customer',
-              createdAt: new Date().toISOString()
-            };
-            await setDoc(doc(db, 'users', firebaseUser.uid), userData);
-            setUser(userData);
-          }
-        } else {
-          setUser(null);
-        }
-      } catch (error) {
-        console.error('Auth state change error:', error);
-        toast.error('Authentication error occurred');
-      } finally {
-        setLoading(false);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        const userData = userDoc.data();
+        
+        const enhancedUser = {
+          uid: user.uid,
+          email: user.email,
+          ...userData
+        };
+
+        setUser(enhancedUser);
+        tokenUtils.setUser(enhancedUser);
+      } else {
+        setUser(null);
+        tokenUtils.clearAll();
       }
+      setLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
 
-  const login = async (email, password, isAdminLogin = false) => {
+  const signup = async (email, password, additionalData = {}) => {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
+      const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password);
       
-      if (userDoc.exists()) {
-        const userData = {
-          uid: userCredential.user.uid,
-          email: userCredential.user.email,
-          ...userDoc.data()
-        };
-
-        // Check if trying to access admin login with non-admin account
-        if (isAdminLogin && userData.role !== 'admin') {
-          throw new Error('Access denied. Admin privileges required.');
-        }
-
-        setUser(userData);
-        toast.success('Successfully logged in!');
-        
-        // Redirect based on login type and role
-        if (isAdminLogin) {
-          if (userData.role === 'admin') {
-            navigate('/admin/dashboard');  // Navigate to admin dashboard
-          } else {
-            throw new Error('Access denied. Admin privileges required.');
-          }
-        } else {
-          // Regular login
-          if (userData.role === 'admin') {
-            navigate('/admin/dashboard');
-          } else {
-            navigate('/');
-          }
-        }
-      }
-
-      return userCredential.user;
-    } catch (error) {
-      console.error('Login error:', error);
-      let errorMessage = 'Failed to login';
-      
-      switch (error.code) {
-        case 'auth/invalid-email':
-          errorMessage = 'Invalid email address';
-          break;
-        case 'auth/user-disabled':
-          errorMessage = 'This account has been disabled';
-          break;
-        case 'auth/user-not-found':
-          errorMessage = 'No account found with this email';
-          break;
-        case 'auth/wrong-password':
-          errorMessage = 'Incorrect password';
-          break;
-        default:
-          errorMessage = error.message;
-      }
-      
-      toast.error(errorMessage);
-      throw new Error(errorMessage);
-    }
-  };
-
-  const signup = async (userData) => {
-    try {
-      const { email, password, ...otherData } = userData;
-      
-      // First create the user in Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      
-      // Then create the user document in Firestore
-      const userDocData = {
-        ...otherData,
-        email,
-        role: otherData.role || 'customer',
+      const userData = {
+        email: firebaseUser.email,
         createdAt: new Date().toISOString(),
-        uid: userCredential.user.uid
+        role: 'customer',
+        ...additionalData
       };
 
-      // Save to Firestore
-      await setDoc(doc(db, 'users', userCredential.user.uid), userDocData);
+      await setDoc(doc(db, 'users', firebaseUser.uid), userData);
 
-      // Update local state
-      setUser({
-        uid: userCredential.user.uid,
-        ...userDocData
-      });
+      const enhancedUser = {
+        uid: firebaseUser.uid,
+        ...userData
+      };
 
-      // Show success message and navigate based on role
+      setUser(enhancedUser);
+      tokenUtils.setUser(enhancedUser);
+      
       toast.success('Account created successfully!');
-      
-      // Navigate based on user role
-      if (userDocData.role === 'admin') {
-        navigate('/admin/dashboard');
-      } else {
-        navigate('/');
-      }
-      
-      return userCredential.user;
+      navigate('/');
     } catch (error) {
       console.error('Signup error:', error);
-      let errorMessage = 'Failed to create account';
-      
-      switch (error.code) {
-        case 'auth/email-already-in-use':
-          errorMessage = 'This email is already registered';
-          break;
-        case 'auth/invalid-email':
-          errorMessage = 'Invalid email address';
-          break;
-        case 'auth/operation-not-allowed':
-          errorMessage = 'Email/password accounts are not enabled';
-          break;
-        case 'auth/weak-password':
-          errorMessage = 'Password should be at least 6 characters';
-          break;
-        default:
-          errorMessage = error.message;
-      }
-      
-      toast.error(errorMessage);
-      throw new Error(errorMessage);
+      toast.error(error.message);
+      throw error;
     }
   };
 
-  const logout = async () => {
+  const login = async (email, password) => {
     try {
-      await signOut(auth);
-      setUser(null);
-      toast.success('Successfully logged out!');
-      navigate('/login');
+      const { user: firebaseUser } = await signInWithEmailAndPassword(auth, email, password);
+      
+      const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+      const userData = userDoc.data();
+
+      const enhancedUser = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        ...userData
+      };
+
+      setUser(enhancedUser);
+      tokenUtils.setUser(enhancedUser);
+
+      toast.success('Welcome back!');
+      navigate(userData.role === 'admin' ? '/admin/dashboard' : '/');
     } catch (error) {
-      toast.error('Failed to log out');
+      console.error('Login error:', error);
+      toast.error(error.message);
       throw error;
     }
   };
@@ -204,77 +115,109 @@ export function AuthProvider({ children }) {
   const signInWithGoogle = async () => {
     try {
       const provider = new GoogleAuthProvider();
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
+      const { user: firebaseUser } = await signInWithPopup(auth, provider);
 
-      // Check if user document exists
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-
+      // Check if user exists in Firestore
+      const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+      
       if (!userDoc.exists()) {
-        // Create new user document if it doesn't exist
+        // Create new user document if first time
         const userData = {
-          name: user.displayName,
-          email: user.email,
-          role: 'customer',
+          email: firebaseUser.email,
+          name: firebaseUser.displayName,
+          photoURL: firebaseUser.photoURL,
           createdAt: new Date().toISOString(),
-          photoURL: user.photoURL || null,
-          phoneNumber: user.phoneNumber || null,
-          uid: user.uid
+          role: 'customer',
+          provider: 'google'
         };
-
-        await setDoc(doc(db, 'users', user.uid), userData);
-        
-        setUser({
-          uid: user.uid,
-          ...userData
-        });
-      } else {
-        setUser({
-          uid: user.uid,
-          ...userDoc.data()
-        });
+        await setDoc(doc(db, 'users', firebaseUser.uid), userData);
       }
 
-      toast.success('Successfully signed in with Google!');
+      const userData = userDoc.exists() ? userDoc.data() : {};
+      const enhancedUser = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        ...userData
+      };
+
+      setUser(enhancedUser);
+      tokenUtils.setUser(enhancedUser);
+
+      toast.success('Logged in with Google successfully!');
       navigate('/');
-      return true;
     } catch (error) {
-      console.error('Google sign in error:', error);
-      let errorMessage = 'Failed to sign in with Google';
-      
-      switch (error.code) {
-        case 'auth/popup-closed-by-user':
-          errorMessage = 'Sign in cancelled';
-          break;
-        case 'auth/popup-blocked':
-          errorMessage = 'Popup was blocked. Please allow popups for this site';
-          break;
-        case 'auth/account-exists-with-different-credential':
-          errorMessage = 'An account already exists with the same email address but different sign-in credentials';
-          break;
-        default:
-          errorMessage = error.code ? error.code.replace(/auth|\/|-/g, ' ').trim() : 'Failed to sign in with Google';
-      }
-      
-      toast.error(errorMessage);
-      throw new Error(errorMessage);
+      console.error('Google login error:', error);
+      toast.error(error.message);
+      throw error;
     }
   };
 
-  const isAdmin = user?.role === 'admin';
+  const logout = async () => {
+    try {
+      await signOut(auth);
+      setUser(null);
+      tokenUtils.clearAll();
+      toast.success('Logged out successfully');
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error(error.message);
+    }
+  };
+
+  const resetPassword = async (email) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      toast.success('Password reset email sent!');
+    } catch (error) {
+      console.error('Password reset error:', error);
+      toast.error(error.message);
+      throw error;
+    }
+  };
+
+  const updatePassword = async (currentPassword, newPassword) => {
+    try {
+      const user = auth.currentUser;
+      
+      // Re-authenticate user before password change
+      const credential = EmailAuthProvider.credential(
+        user.email,
+        currentPassword
+      );
+      await reauthenticateWithCredential(user, credential);
+      
+      // Update password
+      await firebaseUpdatePassword(user, newPassword);
+      
+      // Update user document with password change timestamp
+      await setDoc(doc(db, 'users', user.uid), {
+        lastPasswordChange: new Date().toISOString()
+      }, { merge: true });
+
+      toast.success('Password updated successfully');
+    } catch (error) {
+      console.error('Update password error:', error);
+      if (error.code === 'auth/wrong-password') {
+        toast.error('Current password is incorrect');
+      } else {
+        toast.error('Failed to update password');
+      }
+      throw error;
+    }
+  };
 
   const value = {
     user,
-    login,
+    loading,
     signup,
-    logout,
+    login,
     signInWithGoogle,
-    isAdmin
+    logout,
+    resetPassword,
+    isAdmin: user?.role === 'admin',
+    updatePassword,
   };
-
-  if (loading) {
-    return <Loader />;
-  }
 
   return (
     <AuthContext.Provider value={value}>

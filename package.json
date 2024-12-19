@@ -12,6 +12,7 @@
   "dependencies": {
     "@headlessui/react": "^1.7.17",
     "@heroicons/react": "^1.0.6",
+    "axios": "^1.6.7",
     "chart.js": "^4.4.7",
     "firebase": "^10.x.x",
     "prop-types": "^15.8.1",

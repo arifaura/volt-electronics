@@ -12,6 +12,8 @@ import ForgotPassword from './pages/ForgotPassword';
 import Cart from './pages/Cart';
 import ScrollToTop from './components/utils/ScrollToTop';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import NotFound from './pages/NotFound';
+import Profile from './pages/Profile';
 
 // Admin imports
 import AdminLayout from './components/admin/AdminLayout';
@@ -62,11 +64,17 @@ function App() {
           <Route path="about" element={<About />} />
           <Route path="services" element={<Services />} />
           <Route path="contact" element={<Contact />} />
+          <Route path="profile" element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          } />
           <Route path="cart" element={
             <ProtectedRoute>
               <Cart />
             </ProtectedRoute>
           } />
+          <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
     </>

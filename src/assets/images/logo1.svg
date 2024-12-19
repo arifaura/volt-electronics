@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="50" viewBox="0 0 200 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Lightning Bolt -->
+  <path d="M25 5L8 25L18 28L5 45L35 22L22 19L25 5Z" fill="#2563EB"/>
+  
+  <!-- Text "VOLT" -->
+  <text x="50" y="35" fill="#1E40AF" font-family="Arial" font-size="32" font-weight="bold">
+    VOLT
+  </text>
+  
+  <!-- Text "ELECTRICALS" -->
+  <text x="50" y="45" fill="#1E40AF" font-family="Arial" font-size="12" font-weight="bold">
+    ELECTRICALS
+  </text>
+  
+  <!-- Yellow Spark -->
+  <path d="M15 25L20 27L17 32L12 30L15 25Z" fill="#FCD34D"/>
+</svg> 

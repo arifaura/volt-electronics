@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Lightning Bolt -->
+  <path d="M16 4L6 16L12 18L4 28L24 14L16 12L16 4Z" fill="#2563EB"/>
+  
+  <!-- Yellow Spark -->
+  <path d="M10 16L13 17L11 20L8 19L10 16Z" fill="#FCD34D"/>
+</svg> 
