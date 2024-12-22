@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, getDocs, query } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { ShoppingBagIcon, XIcon, PlusIcon, MinusIcon } from '@heroicons/react/outline';
 import { toast } from 'react-hot-toast';
@@ -44,6 +44,15 @@ export default function Cart() {
   const handleCheckout = async () => {
     setLoading(true);
     try {
+      // Get user's default address
+      const addressesRef = collection(db, `users/${user.uid}/addresses`);
+      const addressesSnapshot = await getDocs(query(addressesRef));
+      const addresses = addressesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      const defaultAddress = addresses.find(addr => addr.isDefault) || addresses[0];
+
       // Save order to Firestore with enhanced data
       const orderData = {
         items: items.map(item => ({
@@ -57,7 +66,9 @@ export default function Cart() {
         customerInfo: {
           name: user.displayName || user.name || '', // Add name from user
           email: user.email,
-          userId: user.uid
+          userId: user.uid,
+          address: defaultAddress ? `${defaultAddress.address}, ${defaultAddress.city}, ${defaultAddress.state} ${defaultAddress.zipCode}` : '',
+          shippingAddress: defaultAddress || null
         },
         orderSummary: {
           subtotal,

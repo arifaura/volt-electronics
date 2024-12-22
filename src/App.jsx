@@ -15,6 +15,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 import NotFound from './pages/NotFound';
 import Profile from './pages/Profile';
 import OrderDetails from './pages/OrderDetails';
+import { useAuth } from './context/AuthContext';
 
 // Admin imports
 import AdminLayout from './components/admin/AdminLayout';
@@ -26,12 +27,28 @@ import Analytics from './pages/admin/Analytics';
 import Settings from './pages/admin/Settings';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminSignup from './pages/admin/AdminSignup';
+import AdminForgotPassword from './pages/admin/AdminForgotPassword';
+import Messages from './pages/admin/Messages';
+import Dashboard from './pages/admin/Dashboard';
 
 function App() {
+  const { user, loading } = useAuth();
+
+  // Root route handler component
+  const RootRedirect = () => {
+    if (loading) return null; // Show nothing while loading
+    if (!user) return <Layout><Home /></Layout>;
+    if (user.role === 'admin') return <Navigate to="/admin/dashboard" replace />;
+    return <Layout><Home /></Layout>;
+  };
+
   return (
     <>
       <ScrollToTop />
       <Routes>
+        {/* Root route with role-based redirect */}
+        <Route path="/" element={<RootRedirect />} />
+
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -39,6 +56,7 @@ function App() {
         {/* Admin Auth Routes */}
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin/signup" element={<AdminSignup />} />
+        <Route path="/admin/forgot-password" element={<AdminForgotPassword />} />
 
         {/* Protected Admin Routes */}
         <Route
@@ -50,17 +68,17 @@ function App() {
           }
         >
           <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route path="dashboard" element={<Dashboard />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="orders" element={<Orders />} />
           <Route path="customers" element={<Customers />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="messages" element={<Messages />} />
         </Route>
 
         {/* Customer Routes */}
         <Route path="/" element={<Layout />}>
-          <Route index element={<Home />} />
           <Route path="products" element={<Products />} />
           <Route path="about" element={<About />} />
           <Route path="services" element={<Services />} />

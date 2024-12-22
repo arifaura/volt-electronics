@@ -104,7 +104,6 @@ export function AuthProvider({ children }) {
       tokenUtils.setUser(enhancedUser);
 
       toast.success('Welcome back!');
-      navigate(userData.role === 'admin' ? '/admin/dashboard' : '/');
     } catch (error) {
       console.error('Login error:', error);
       toast.error(error.message);

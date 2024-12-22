@@ -1,29 +1,78 @@
-import { Link } from 'react-router-dom';
-import { Disclosure, Menu, Transition } from '@headlessui/react';
+import { Link, useLocation } from 'react-router-dom';
+import { Disclosure, Menu } from '@headlessui/react';
 import { 
   ShoppingCartIcon,
   MenuIcon,
   XIcon,
   UserCircleIcon,
-  CogIcon,
-  LogoutIcon
+  LogoutIcon,
+  ChartBarIcon
 } from '@heroicons/react/outline';
-import { Fragment } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import logo from '../../assets/images/logo1.svg';
 
+const navItemVariants = {
+  hidden: { opacity: 0, y: -10 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: {
+      duration: 0.2,
+      ease: "easeOut"
+    }
+  }
+};
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const logoVariants = {
+  hidden: { opacity: 0, x: -20 },
+  visible: { 
+    opacity: 1, 
+    x: 0,
+    transition: {
+      duration: 0.5,
+      ease: "easeOut"
+    }
+  }
+};
+
 export default function Header() {
   const { items = [] } = useCart();
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
+  const location = useLocation();
+
+  const isAdminRoute = location.pathname.startsWith('/admin');
   
-  const navigation = [
-    { name: 'Home', href: '/', current: true },
+  // Different navigation items for admin and customer
+  const customerNavigation = [
+    { name: 'Home', href: '/', current: false },
     { name: 'Products', href: '/products', current: false },
     { name: 'About Us', href: '/about', current: false },
     { name: 'Services', href: '/services', current: false },
     { name: 'Contact', href: '/contact', current: false },
   ];
+
+  const adminNavigation = [
+    { name: 'Dashboard', href: '/admin/dashboard', current: false },
+    { name: 'Messages', href: '/admin/messages', current: false },
+    { name: 'Orders', href: '/admin/orders', current: false },
+    { name: 'Customers', href: '/admin/customers', current: false },
+    { name: 'Analytics', href: '/admin/analytics', current: false },
+    { name: 'Settings', href: '/admin/settings', current: false },
+  ];
+
+  const navigation = isAdminRoute ? adminNavigation : customerNavigation;
 
   const handleLogout = async () => {
     try {
@@ -33,72 +82,134 @@ export default function Header() {
     }
   };
 
+  // Don't render anything while checking auth state
+  if (loading) return null;
+
+  // Don't show header on auth pages
+  if (
+    location.pathname === '/login' ||
+    location.pathname === '/signup' ||
+    location.pathname === '/forgot-password' ||
+    location.pathname === '/admin/login' ||
+    location.pathname === '/admin/signup' ||
+    location.pathname === '/admin/forgot-password'
+  ) {
+    return null;
+  }
+
   return (
-    <Disclosure as="nav" className="bg-white shadow-lg">
+    <>
+      <Disclosure as="nav" className="bg-white shadow-lg fixed w-full top-0 left-0 right-0 z-[50]">
       {({ open }) => (
         <>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
-              {/* Logo */}
+              {/* Logo and Navigation */}
               <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <Link to="/">
+                <motion.div 
+                  className="flex-shrink-0"
+                  initial="hidden"
+                  animate="visible"
+                  variants={logoVariants}
+                >
+                  <Link to={user?.role === 'admin' ? '/admin/dashboard' : '/'}>
                     <img
                       className="h-8 w-auto"
                       src={logo}
                       alt="Volt Electricals"
                     />
                   </Link>
-                </div>
-                {/* Desktop Navigation */}
-                <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                  {navigation.map((item) => (
-                    <Link
+                </motion.div>
+                <motion.div 
+                  className="hidden sm:ml-6 sm:flex sm:space-x-8"
+                  initial="hidden"
+                  animate="visible"
+                  variants={containerVariants}
+                >
+                  {!isAdminRoute && customerNavigation.map((item) => (
+                    <motion.div
                       key={item.name}
+                      variants={navItemVariants}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Link
                       to={item.href}
                       className="text-gray-900 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
                     >
                       {item.name}
                     </Link>
+                    </motion.div>
                   ))}
-                </div>
+                  {user && isAdminRoute && adminNavigation.map((item) => (
+                    <motion.div
+                      key={item.name}
+                      variants={navItemVariants}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Link
+                        to={item.href}
+                        className="text-gray-900 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+                      >
+                        {item.name}
+                      </Link>
+                    </motion.div>
+                  ))}
+                </motion.div>
               </div>
 
               {/* Desktop Right Section */}
-              <div className="hidden sm:flex sm:items-center">
+              <motion.div 
+                className="hidden sm:flex sm:items-center"
+                initial="hidden"
+                animate="visible"
+                variants={containerVariants}
+              >
                 {user ? (
                   <div className="flex items-center space-x-4">
+                    {user.role === 'admin' && (
+                      <Link
+                        to="/admin/dashboard"
+                        className="flex items-center text-gray-700 hover:text-blue-600"
+                      >
+                        <ChartBarIcon className="h-6 w-6" />
+                      </Link>
+                    )}
                     <Menu as="div" className="relative">
+                      <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                       <Menu.Button className="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                         <span className="sr-only">Open user menu</span>
                         <UserCircleIcon className="h-8 w-8 text-gray-600" />
                       </Menu.Button>
-                      <Transition
-                        as={Fragment}
-                        enter="transition ease-out duration-100"
-                        enterFrom="transform opacity-0 scale-95"
-                        enterTo="transform opacity-100 scale-100"
-                        leave="transition ease-in duration-75"
-                        leaveFrom="transform opacity-100 scale-100"
-                        leaveTo="transform opacity-0 scale-95"
-                      >
-                        <Menu.Items className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
-                          <div className="py-1">
+                      </motion.div>
+                      <AnimatePresence>
+                        <Menu.Items className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-[100]">
+                          <motion.div 
+                            className="py-1"
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            transition={{ duration: 0.2 }}
+                          >
                             <Menu.Item>
                               {({ active }) => (
+                                <motion.div whileHover={{ x: 5 }}>
                                 <Link
-                                  to="/profile"
+                                    to={user.role === 'admin' ? '/admin/settings' : '/profile'}
                                   className={`${
                                     active ? 'bg-gray-100' : ''
                                   } flex px-4 py-2 text-sm text-gray-700`}
                                 >
                                   <UserCircleIcon className="h-5 w-5 mr-2" />
-                                  Profile
+                                    {user.role === 'admin' ? 'Settings' : 'Profile'}
                                 </Link>
+                                </motion.div>
                               )}
                             </Menu.Item>
                             <Menu.Item>
                               {({ active }) => (
+                                <motion.div whileHover={{ x: 5 }}>
                                 <button
                                   onClick={handleLogout}
                                   className={`${
@@ -108,23 +219,33 @@ export default function Header() {
                                   <LogoutIcon className="h-5 w-5 mr-2" />
                                   Sign out
                                 </button>
+                                </motion.div>
                               )}
                             </Menu.Item>
-                          </div>
+                          </motion.div>
                         </Menu.Items>
-                      </Transition>
+                      </AnimatePresence>
                     </Menu>
+                    {user.role !== 'admin' && (
+                      <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                     <Link
                       to="/cart"
-                      className="p-2 text-gray-700 hover:text-blue-600 relative"
+                          className="p-2 text-gray-700 hover:text-blue-600 relative inline-flex items-center justify-center"
                     >
                       <ShoppingCartIcon className="h-6 w-6" />
                       {items && items.length > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                            <motion.span 
+                              className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                            >
                           {items.length}
-                        </span>
+                            </motion.span>
                       )}
                     </Link>
+                      </motion.div>
+                    )}
                   </div>
                 ) : (
                   <div className="flex items-center space-x-4">
@@ -132,20 +253,24 @@ export default function Header() {
                       to="/login"
                       className="text-gray-900 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
                     >
-                      Sign in
+                      Login
                     </Link>
                     <Link
                       to="/signup"
-                      className="bg-blue-600 text-white hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium"
+                      className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium"
                     >
                       Sign up
                     </Link>
                   </div>
                 )}
-              </div>
+              </motion.div>
 
               {/* Mobile menu button */}
-              <div className="flex items-center sm:hidden">
+              <motion.div 
+                className="flex items-center sm:hidden"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
                 <Disclosure.Button className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100">
                   <span className="sr-only">Open main menu</span>
                   {open ? (
@@ -154,35 +279,72 @@ export default function Header() {
                     <MenuIcon className="block h-6 w-6" aria-hidden="true" />
                   )}
                 </Disclosure.Button>
-              </div>
+              </motion.div>
             </div>
           </div>
 
           {/* Mobile menu */}
-          <Disclosure.Panel className="sm:hidden">
+          <AnimatePresence>
+            {open && (
+              <Disclosure.Panel static className="sm:hidden">
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
             <div className="px-2 pt-2 pb-3 space-y-1">
-              {navigation.map((item) => (
+                    {!isAdminRoute && customerNavigation.map((item) => (
+                      <motion.div
+                        key={item.name}
+                        initial={{ x: -20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ duration: 0.2 }}
+                      >
                 <Disclosure.Button
+                          as={Link}
+                          to={item.href}
+                          className="text-gray-900 hover:bg-gray-50 block px-3 py-2 rounded-md text-base font-medium"
+                        >
+                          {item.name}
+                        </Disclosure.Button>
+                      </motion.div>
+                    ))}
+                    {user && isAdminRoute && adminNavigation.map((item) => (
+                      <motion.div
                   key={item.name}
+                        initial={{ x: -20, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <Disclosure.Button
                   as={Link}
                   to={item.href}
                   className="text-gray-900 hover:bg-gray-50 block px-3 py-2 rounded-md text-base font-medium"
                 >
                   {item.name}
                 </Disclosure.Button>
+                      </motion.div>
               ))}
             </div>
             {/* Mobile menu authentication */}
             <div className="pt-4 pb-3 border-t border-gray-200">
+                    <motion.div 
+                      className="px-2 space-y-1"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.2 }}
+                    >
               {user ? (
-                <div className="px-2 space-y-1">
+                        <>
                   <Disclosure.Button
                     as={Link}
-                    to="/profile"
+                            to={user.role === 'admin' ? '/admin/settings' : '/profile'}
                     className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
                   >
-                    Profile
+                            {user.role === 'admin' ? 'Settings' : 'Profile'}
                   </Disclosure.Button>
+                          {user.role !== 'admin' && (
                   <Disclosure.Button
                     as={Link}
                     to="/cart"
@@ -190,6 +352,7 @@ export default function Header() {
                   >
                     Cart {items.length > 0 && `(${items.length})`}
                   </Disclosure.Button>
+                          )}
                   <Disclosure.Button
                     as="button"
                     onClick={handleLogout}
@@ -197,15 +360,15 @@ export default function Header() {
                   >
                     Sign out
                   </Disclosure.Button>
-                </div>
+                        </>
               ) : (
-                <div className="px-2 space-y-1">
+                        <>
                   <Disclosure.Button
                     as={Link}
                     to="/login"
                     className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
                   >
-                    Sign in
+                            Login
                   </Disclosure.Button>
                   <Disclosure.Button
                     as={Link}
@@ -214,12 +377,19 @@ export default function Header() {
                   >
                     Sign up
                   </Disclosure.Button>
-                </div>
+                        </>
               )}
+                    </motion.div>
             </div>
+                </motion.div>
           </Disclosure.Panel>
+            )}
+          </AnimatePresence>
         </>
       )}
     </Disclosure>
+      {/* Add padding to prevent content from hiding behind fixed header */}
+      <div className="h-16"></div>
+    </>
   );
 } 

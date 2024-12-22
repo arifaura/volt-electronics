@@ -8,6 +8,41 @@ import {
   MailIcon,
   ClockIcon 
 } from '@heroicons/react/outline';
+import { motion } from 'framer-motion';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.2
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: "easeOut"
+    }
+  }
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, scale: 0.8 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      duration: 0.5,
+      ease: "easeOut"
+    }
+  }
+};
 
 export default function Contact() {
   const [loading, setLoading] = useState(false);
@@ -62,116 +97,156 @@ export default function Contact() {
   ];
 
   return (
-    <div className="bg-gradient-to-b from-gray-50 to-white min-h-screen py-16 px-4 sm:px-6 lg:px-8">
+    <motion.div 
+      className="bg-gradient-to-b from-gray-50 to-white min-h-screen py-16 px-4 sm:px-6 lg:px-8"
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+    >
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-gray-900 sm:text-5xl">
+        <motion.div 
+          className="text-center mb-16"
+          variants={itemVariants}
+        >
+          <motion.h2 
+            className="text-4xl font-bold text-gray-900 sm:text-5xl"
+            variants={itemVariants}
+          >
             Get in Touch
-          </h2>
-          <div className="mt-4 text-xl text-gray-500 max-w-2xl mx-auto">
+          </motion.h2>
+          <motion.div 
+            className="mt-4 text-xl text-gray-500 max-w-2xl mx-auto"
+            variants={itemVariants}
+          >
             Have questions about our services? We're here to help and would love to hear from you.
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           {/* Contact Information */}
-          <div className="space-y-8">
+          <motion.div 
+            className="space-y-8"
+            variants={containerVariants}
+          >
             {/* Info Card */}
-            <div className="bg-white rounded-2xl shadow-xl p-8 transform transition-all hover:scale-105">
-              <div className="space-y-6">
-                <div className="flex items-start">
-                  <LocationMarkerIcon className="h-6 w-6 text-blue-600 mt-1" />
-                  <div className="ml-4">
-                    <p className="text-gray-900 font-semibold">Visit Us</p>
-                    <p className="text-gray-600 mt-1">
-                      123 Electric Avenue<br />
-                      Circuit City, VT 12345
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start">
-                  <PhoneIcon className="h-6 w-6 text-blue-600 mt-1" />
-                  <div className="ml-4">
-                    <p className="text-gray-900 font-semibold">Call Us</p>
-                    <p className="text-gray-600 mt-1">+1 (555) 123-4567</p>
-                  </div>
-                </div>
-                <div className="flex items-start">
-                  <MailIcon className="h-6 w-6 text-blue-600 mt-1" />
-                  <div className="ml-4">
-                    <p className="text-gray-900 font-semibold">Email Us</p>
-                    <p className="text-gray-600 mt-1">support@voltelectricals.com</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <motion.div 
+              className="bg-white rounded-2xl shadow-xl p-8"
+              variants={cardVariants}
+              whileHover={{ scale: 1.02, boxShadow: "0 8px 30px rgba(0,0,0,0.12)" }}
+            >
+              <motion.div className="space-y-6">
+                {[
+                  { icon: LocationMarkerIcon, title: "Visit Us", content: "123 Electric Avenue\nCircuit City, VT 12345" },
+                  { icon: PhoneIcon, title: "Call Us", content: "+1 (555) 123-4567" },
+                  { icon: MailIcon, title: "Email Us", content: "support@voltelectricals.com" }
+                ].map((item, index) => (
+                  <motion.div 
+                    key={item.title}
+                    className="flex items-start"
+                    variants={itemVariants}
+                    whileHover={{ x: 5 }}
+                    custom={index}
+                  >
+                    <item.icon className="h-6 w-6 text-blue-600 mt-1" />
+                    <div className="ml-4">
+                      <p className="text-gray-900 font-semibold">{item.title}</p>
+                      <p className="text-gray-600 mt-1 whitespace-pre-line">{item.content}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            </motion.div>
 
             {/* Business Hours Card */}
-            <div className="bg-white rounded-2xl shadow-xl p-8 transform transition-all hover:scale-105">
-              <div className="flex items-start mb-6">
+            <motion.div 
+              className="bg-white rounded-2xl shadow-xl p-8"
+              variants={cardVariants}
+              whileHover={{ scale: 1.02, boxShadow: "0 8px 30px rgba(0,0,0,0.12)" }}
+            >
+              <motion.div 
+                className="flex items-start mb-6"
+                variants={itemVariants}
+              >
                 <ClockIcon className="h-6 w-6 text-blue-600 mt-1" />
                 <div className="ml-4">
                   <p className="text-gray-900 font-semibold">Business Hours</p>
                 </div>
-              </div>
-              <div className="space-y-4">
-                {businessHours.map(({ day, hours }) => (
-                  <div key={day} className="flex justify-between items-center">
-                    <span className="text-gray-600">{day}</span>
-                    <span className="text-gray-900 font-medium">{hours}</span>
-                  </div>
+              </motion.div>
+              <motion.div className="space-y-4">
+                {businessHours.map((hour, index) => (
+                  <motion.div 
+                    key={hour.day}
+                    className="flex justify-between items-center"
+                    variants={itemVariants}
+                    whileHover={{ x: 5 }}
+                    custom={index}
+                  >
+                    <span className="text-gray-600">{hour.day}</span>
+                    <span className="text-gray-900 font-medium">{hour.hours}</span>
+                  </motion.div>
                 ))}
-              </div>
-            </div>
-          </div>
+              </motion.div>
+            </motion.div>
+          </motion.div>
 
           {/* Contact Form */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl shadow-xl p-8">
-              <h3 className="text-2xl font-bold text-gray-900 mb-8">
+          <motion.div 
+            className="lg:col-span-2"
+            variants={cardVariants}
+          >
+            <motion.div 
+              className="bg-white rounded-2xl shadow-xl p-8"
+              whileHover={{ boxShadow: "0 8px 30px rgba(0,0,0,0.12)" }}
+            >
+              <motion.h3 
+                className="text-2xl font-bold text-gray-900 mb-8"
+                variants={itemVariants}
+              >
                 Send us a Message
-              </h3>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      name="name"
-                      id="name"
-                      required
-                      value={formData.name}
-                      onChange={handleChange}
-                      className="peer w-full border-0 border-b-2 border-gray-300 bg-transparent py-2.5 px-0 text-gray-900 placeholder-transparent focus:border-blue-600 focus:outline-none"
-                      placeholder="Name"
-                    />
-                    <label 
-                      htmlFor="name"
-                      className="absolute left-0 -top-3.5 text-sm text-gray-600 transition-all peer-placeholder-shown:top-2.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:-top-3.5 peer-focus:text-sm peer-focus:text-blue-600"
+              </motion.h3>
+              <motion.form 
+                onSubmit={handleSubmit} 
+                className="space-y-6"
+                variants={containerVariants}
+              >
+                <motion.div 
+                  className="grid grid-cols-1 gap-6 sm:grid-cols-2"
+                  variants={itemVariants}
+                >
+                  {[
+                    { name: 'name', type: 'text', label: 'Name' },
+                    { name: 'email', type: 'email', label: 'Email' }
+                  ].map((field) => (
+                    <motion.div 
+                      key={field.name}
+                      className="relative"
+                      whileHover={{ scale: 1.02 }}
                     >
-                      Name
-                    </label>
-                  </div>
-                  <div className="relative">
-                    <input
-                      type="email"
-                      name="email"
-                      id="email"
-                      required
-                      value={formData.email}
-                      onChange={handleChange}
-                      className="peer w-full border-0 border-b-2 border-gray-300 bg-transparent py-2.5 px-0 text-gray-900 placeholder-transparent focus:border-blue-600 focus:outline-none"
-                      placeholder="Email"
-                    />
-                    <label 
-                      htmlFor="email"
-                      className="absolute left-0 -top-3.5 text-sm text-gray-600 transition-all peer-placeholder-shown:top-2.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:-top-3.5 peer-focus:text-sm peer-focus:text-blue-600"
-                    >
-                      Email
-                    </label>
-                  </div>
-                </div>
+                      <input
+                        type={field.type}
+                        name={field.name}
+                        id={field.name}
+                        required
+                        value={formData[field.name]}
+                        onChange={handleChange}
+                        className="peer w-full border-0 border-b-2 border-gray-300 bg-transparent py-2.5 px-0 text-gray-900 placeholder-transparent focus:border-blue-600 focus:outline-none"
+                        placeholder={field.label}
+                      />
+                      <label 
+                        htmlFor={field.name}
+                        className="absolute left-0 -top-3.5 text-sm text-gray-600 transition-all peer-placeholder-shown:top-2.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:-top-3.5 peer-focus:text-sm peer-focus:text-blue-600"
+                      >
+                        {field.label}
+                      </label>
+                    </motion.div>
+                  ))}
+                </motion.div>
 
-                <div className="relative">
+                <motion.div 
+                  className="relative"
+                  variants={itemVariants}
+                  whileHover={{ scale: 1.02 }}
+                >
                   <input
                     type="text"
                     name="subject"
@@ -188,9 +263,13 @@ export default function Contact() {
                   >
                     Subject
                   </label>
-                </div>
+                </motion.div>
 
-                <div className="relative">
+                <motion.div 
+                  className="relative"
+                  variants={itemVariants}
+                  whileHover={{ scale: 1.02 }}
+                >
                   <textarea
                     name="message"
                     id="message"
@@ -207,15 +286,20 @@ export default function Contact() {
                   >
                     Message
                   </label>
-                </div>
+                </motion.div>
 
-                <div>
-                  <button
+                <motion.div 
+                  variants={itemVariants}
+                  whileHover={{ scale: 1.02 }}
+                >
+                  <motion.button
                     type="submit"
                     disabled={loading}
-                    className={`w-full py-3 px-4 border border-transparent rounded-xl shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all transform hover:scale-[1.02] ${
+                    className={`w-full py-3 px-4 border border-transparent rounded-xl shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all ${
                       loading ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                   >
                     {loading ? (
                       <div className="flex items-center justify-center">
@@ -225,13 +309,13 @@ export default function Contact() {
                     ) : (
                       'Send Message'
                     )}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
+                  </motion.button>
+                </motion.div>
+              </motion.form>
+            </motion.div>
+          </motion.div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 } 

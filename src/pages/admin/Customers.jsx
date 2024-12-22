@@ -1,263 +1,469 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc, where, getDocs } from 'firebase/firestore';
+import { db } from '../../config/firebase';
+import { format } from 'date-fns';
+import { toast } from 'react-hot-toast';
 import { 
+  UserIcon,
   SearchIcon,
-  FilterIcon,
-  UserAddIcon,
-  MailIcon,
-  PhoneIcon,
-  LocationMarkerIcon 
+  BanIcon,
+  CheckCircleIcon
 } from '@heroicons/react/outline';
 
 export default function Customers() {
-  const [selectedFilter, setSelectedFilter] = useState('all');
+  const [customers, setCustomers] = useState([]);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filter, setFilter] = useState('all');
+  const [customerOrders, setCustomerOrders] = useState([]);
+  const [indexError, setIndexError] = useState(false);
+  const [customerMetrics, setCustomerMetrics] = useState({
+    totalSpent: 0,
+    orderCount: 0,
+    averageOrderValue: 0,
+    lastOrderDate: null
+  });
 
-  // Demo customers data
-  const customers = [
-    {
-      id: 1,
-      name: 'John Doe',
-      email: 'john@example.com',
-      phone: '(555) 123-4567',
-      location: 'New York, USA',
-      totalOrders: 12,
-      totalSpent: 2499.99,
-      status: 'active',
-      joinDate: '2023-12-01',
-      lastOrder: '2024-02-20'
-    },
-    {
-      id: 2,
-      name: 'Jane Smith',
-      email: 'jane@example.com',
-      phone: '(555) 987-6543',
-      location: 'Los Angeles, USA',
-      totalOrders: 8,
-      totalSpent: 1899.99,
-      status: 'active',
-      joinDate: '2024-01-15',
-      lastOrder: '2024-02-22'
-    },
-    // Add more customers...
-  ];
+  // Fetch customers
+  useEffect(() => {
+    let unsubscribe;
+    const fetchCustomers = async () => {
+      try {
+        // First try to get all users without ordering
+        const basicQuery = query(
+          collection(db, 'users'),
+          where('role', '==', 'customer')
+        );
+
+        const basicSnapshot = await getDocs(basicQuery);
+        const initialCustomerData = basicSnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate?.() || null
+          };
+        });
+        setCustomers(initialCustomerData);
+        setLoading(false);
+
+        // Then try to set up the ordered query
+        const orderedQuery = query(
+          collection(db, 'users'),
+          where('role', '==', 'customer'),
+          orderBy('createdAt', 'desc')
+        );
+
+        unsubscribe = onSnapshot(orderedQuery, (snapshot) => {
+          const customerData = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              ...data,
+              createdAt: data.createdAt?.toDate?.() || null
+            };
+          });
+          setCustomers(customerData);
+          setIndexError(false);
+        }, (error) => {
+          if (error.code === 'failed-precondition') {
+            console.error('Index required:', error);
+            setIndexError(true);
+            const indexUrl = error.message.match(/https:\/\/console\.firebase\.google\.com\S+/);
+            if (indexUrl) {
+              toast((t) => (
+                <div onClick={() => {window.open(indexUrl[0], '_blank')}}>
+                  <p>Click here to create the required index</p>
+                  <small className="text-xs">This will open Firebase Console</small>
+                </div>
+              ), {
+                duration: 5000,
+                style: {
+                  cursor: 'pointer',
+                  background: '#4B5563',
+                  color: 'white',
+                }
+              });
+            }
+          } else {
+            console.error('Error in snapshot listener:', error);
+            toast.error('Error loading customers');
+          }
+        });
+      } catch (error) {
+        console.error('Error fetching customers:', error);
+        setLoading(false);
+        if (error.code === 'failed-precondition') {
+          setIndexError(true);
+          toast.error('Index required. Check console for details.');
+        } else {
+          toast.error('Error loading customers');
+        }
+      }
+    };
+
+    fetchCustomers();
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, []);
+
+  // Fetch customer orders when a customer is selected
+  useEffect(() => {
+    if (!selectedCustomer) return;
+
+    const fetchCustomerOrders = async () => {
+      try {
+        const q = query(
+          collection(db, 'orders'),
+          where('customerInfo.userId', '==', selectedCustomer.id)
+        );
+
+        const snapshot = await getDocs(q);
+        const orders = snapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            createdAt: data.createdAt?.toDate?.() || null
+          };
+        }).sort((a, b) => {
+          if (!a.createdAt || !b.createdAt) return 0;
+          return b.createdAt - a.createdAt;
+        });
+
+        setCustomerOrders(orders);
+
+        // Calculate customer metrics
+        const totalSpent = orders.reduce((sum, order) => sum + (order.total || 0), 0);
+        const lastOrder = orders[0];
+
+        setCustomerMetrics({
+          totalSpent,
+          orderCount: orders.length,
+          averageOrderValue: orders.length ? totalSpent / orders.length : 0,
+          lastOrderDate: lastOrder?.createdAt || null
+        });
+      } catch (error) {
+        console.error('Error fetching customer orders:', error);
+        toast.error('Error loading customer orders');
+      }
+    };
+
+    fetchCustomerOrders();
+  }, [selectedCustomer]);
+
+  const updateCustomerStatus = async (customerId, isActive) => {
+    try {
+      await updateDoc(doc(db, 'users', customerId), {
+        isActive,
+        updatedAt: new Date()
+      });
+      toast.success(`Customer ${isActive ? 'activated' : 'deactivated'} successfully`);
+    } catch (error) {
+      console.error('Error updating customer status:', error);
+      toast.error('Failed to update customer status');
+    }
+  };
+
+  const filteredCustomers = customers.filter(customer => {
+    const matchesSearch = searchQuery === '' || 
+      customer.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      customer.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      customer.phone?.includes(searchQuery);
+
+    const matchesFilter = filter === 'all' || 
+      (filter === 'active' && customer.isActive) ||
+      (filter === 'inactive' && !customer.isActive);
+
+    return matchesSearch && matchesFilter;
+  });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-8">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-white rounded w-1/4"></div>
+          <div className="h-64 bg-white rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (indexError) {
+    return (
+      <div className="min-h-screen bg-gray-100 py-8 px-4 sm:px-6 lg:px-8">
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Index Required</h2>
+          <p className="text-gray-600 mb-4">
+            A database index needs to be created for this page to work properly. Please check the console for the link to create the index.
+          </p>
+          <p className="text-gray-600 mb-4">
+            After creating the index, it may take a few minutes to complete. The page will automatically update once the index is ready.
+          </p>
+          <div className="animate-pulse">
+            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
-        <button className="flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
-          <UserAddIcon className="h-5 w-5 mr-2" />
-          Add Customer
-        </button>
+    <div className="min-h-screen bg-gray-100">
+      <div className="py-6 px-4 sm:px-6 lg:px-8">
+        <div className="mb-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-semibold text-gray-900">Customers</h1>
       </div>
 
-      {/* Customer Stats */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <div className="relative flex-1 max-w-xs">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <SearchIcon className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search customers..."
+                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              />
+        </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setFilter('all')}
+                className={`px-4 py-2 rounded-md text-sm font-medium ${
+                  filter === 'all' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setFilter('active')}
+                className={`px-4 py-2 rounded-md text-sm font-medium ${
+                  filter === 'active' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                Active
+              </button>
+              <button
+                onClick={() => setFilter('inactive')}
+                className={`px-4 py-2 rounded-md text-sm font-medium ${
+                  filter === 'inactive' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                Inactive
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Customer List */}
+          <div className="lg:col-span-1 bg-white rounded-lg shadow-sm overflow-hidden">
+            <div className="divide-y divide-gray-200">
+              {filteredCustomers.length === 0 ? (
+                <div className="p-4 text-center text-gray-500">
+                  No customers found
+                </div>
+              ) : (
+                filteredCustomers.map((customer) => (
+                  <div
+                    key={customer.id}
+                    className={`p-4 cursor-pointer hover:bg-gray-50 ${
+                      selectedCustomer?.id === customer.id ? 'bg-gray-50' : ''
+                    }`}
+                    onClick={() => setSelectedCustomer(customer)}
+                  >
+                    <div className="flex items-center space-x-3">
               <div className="flex-shrink-0">
-                <UserAddIcon className="h-6 w-6 text-gray-400" />
+                        <UserIcon className="h-6 w-6 text-gray-400" />
               </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">
-                    Total Customers
-                  </dt>
-                  <dd className="text-lg font-medium text-gray-900">
-                    1,482
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <UserAddIcon className="h-6 w-6 text-gray-400" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">
-                    New This Month
-                  </dt>
-                  <dd className="text-lg font-medium text-gray-900">
-                    64
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <UserAddIcon className="h-6 w-6 text-gray-400" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">
-                    Active Customers
-                  </dt>
-                  <dd className="text-lg font-medium text-gray-900">
-                    1,284
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <UserAddIcon className="h-6 w-6 text-gray-400" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">
-                    Avg. Spend
-                  </dt>
-                  <dd className="text-lg font-medium text-gray-900">
-                    $842
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Filters and Search */}
-      <div className="flex justify-between items-center space-x-4 bg-white p-4 rounded-lg shadow">
-        <div className="flex-1 max-w-sm">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <SearchIcon className="h-5 w-5 text-gray-400" />
-            </div>
-            <input
-              type="search"
-              placeholder="Search customers..."
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            />
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <FilterIcon className="h-5 w-5 text-gray-400" />
-            <select
-              value={selectedFilter}
-              onChange={(e) => setSelectedFilter(e.target.value)}
-              className="border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            >
-              <option value="all">All Customers</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="new">New</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Customers List */}
-      <div className="bg-white shadow overflow-hidden sm:rounded-md">
-        <ul className="divide-y divide-gray-200">
-          {customers.map((customer) => (
-            <li key={customer.id}>
-              <div className="px-4 py-4 sm:px-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0">
-                      <div className="h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center">
-                        <span className="text-xl font-medium text-gray-600">
-                          {customer.name.charAt(0)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="ml-4">
-                      <h3 className="text-lg font-medium text-gray-900">{customer.name}</h3>
-                      <div className="mt-1 flex items-center space-x-4 text-sm text-gray-500">
-                        <div className="flex items-center">
-                          <MailIcon className="h-4 w-4 mr-1" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {customer.name}
+                        </p>
+                        <p className="text-sm text-gray-500 truncate">
                           {customer.email}
+                        </p>
+              </div>
+                      <div className="flex-shrink-0">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          customer.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                          {customer.isActive ? 'Active' : 'Inactive'}
+                        </span>
+            </div>
+          </div>
+        </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Customer Details */}
+          <div className="lg:col-span-2 space-y-4">
+            {selectedCustomer ? (
+              <>
+                {/* Customer Info */}
+                <div className="bg-white rounded-lg shadow-sm overflow-hidden p-4">
+                  <div className="px-6 py-4 border-b border-gray-200">
+                    <div className="flex justify-between items-center">
+                      <h2 className="text-lg font-medium text-gray-900">
+                        Customer Details
+                      </h2>
+                      <button
+                        onClick={() => updateCustomerStatus(selectedCustomer.id, !selectedCustomer.isActive)}
+                        className={`inline-flex items-center px-3 py-2 border shadow-sm text-sm leading-4 font-medium rounded-md ${
+                          selectedCustomer.isActive
+                            ? 'border-red-300 text-red-700 bg-white hover:bg-red-50'
+                            : 'border-green-300 text-green-700 bg-white hover:bg-green-50'
+                        }`}
+                      >
+                        {selectedCustomer.isActive ? (
+                          <>
+                            <BanIcon className="h-4 w-4 mr-1" />
+                            Deactivate
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircleIcon className="h-4 w-4 mr-1" />
+                            Activate
+                          </>
+                        )}
+                      </button>
+        </div>
+      </div>
+
+                  <div className="px-6 py-4">
+                    <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+                      <div className="sm:col-span-1">
+                        <dt className="text-sm font-medium text-gray-500">Full Name</dt>
+                        <dd className="mt-1 text-sm text-gray-900">{selectedCustomer.name}</dd>
+            </div>
+                      <div className="sm:col-span-1">
+                        <dt className="text-sm font-medium text-gray-500">Email</dt>
+                        <dd className="mt-1 text-sm text-gray-900">{selectedCustomer.email}</dd>
+          </div>
+                      <div className="sm:col-span-1">
+                        <dt className="text-sm font-medium text-gray-500">Phone</dt>
+                        <dd className="mt-1 text-sm text-gray-900">{selectedCustomer.phone || 'N/A'}</dd>
+        </div>
+                      <div className="sm:col-span-1">
+                        <dt className="text-sm font-medium text-gray-500">Member Since</dt>
+                        <dd className="mt-1 text-sm text-gray-900">
+                          {selectedCustomer.createdAt ? format(selectedCustomer.createdAt, 'MMM d, yyyy') : 'N/A'}
+                        </dd>
+          </div>
+                    </dl>
+        </div>
+      </div>
+
+                {/* Customer Metrics */}
+                <div className="bg-white rounded-lg shadow-sm overflow-hidden p-4">
+                  <div className="px-6 py-4 border-b border-gray-200">
+                    <h3 className="text-lg font-medium text-gray-900">Customer Activity</h3>
+                  </div>
+                  <div className="px-6 py-4">
+                    <dl className="grid grid-cols-1 gap-5 sm:grid-cols-4">
+                      <div className="px-4 py-5 bg-gray-50 shadow-sm rounded-lg overflow-hidden sm:p-6">
+                        <dt className="text-sm font-medium text-gray-500 truncate">Total Orders</dt>
+                        <dd className="mt-1 text-3xl font-semibold text-gray-900">{customerMetrics.orderCount}</dd>
+                      </div>
+                      <div className="px-4 py-5 bg-gray-50 shadow-sm rounded-lg overflow-hidden sm:p-6">
+                        <dt className="text-sm font-medium text-gray-500 truncate">Total Spent</dt>
+                        <dd className="mt-1 text-3xl font-semibold text-gray-900">${customerMetrics.totalSpent.toFixed(2)}</dd>
+                    </div>
+                      <div className="px-4 py-5 bg-gray-50 shadow-sm rounded-lg overflow-hidden sm:p-6">
+                        <dt className="text-sm font-medium text-gray-500 truncate">Average Order</dt>
+                        <dd className="mt-1 text-3xl font-semibold text-gray-900">${customerMetrics.averageOrderValue.toFixed(2)}</dd>
                         </div>
-                        <div className="flex items-center">
-                          <PhoneIcon className="h-4 w-4 mr-1" />
-                          {customer.phone}
-                        </div>
-                        <div className="flex items-center">
-                          <LocationMarkerIcon className="h-4 w-4 mr-1" />
-                          {customer.location}
-                        </div>
+                      <div className="px-4 py-5 bg-gray-50 shadow-sm rounded-lg overflow-hidden sm:p-6">
+                        <dt className="text-sm font-medium text-gray-500 truncate">Last Order</dt>
+                        <dd className="mt-1 text-3xl font-semibold text-gray-900">
+                          {customerMetrics.lastOrderDate ? format(customerMetrics.lastOrderDate, 'MMM d') : 'N/A'}
+                        </dd>
+                      </div>
+                    </dl>
                       </div>
                     </div>
+
+                {/* Order History */}
+                <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+                  <div className="px-4 py-3 border-b border-gray-200">
+                    <h3 className="text-lg font-medium text-gray-900">Order History</h3>
                   </div>
-                  <div className="flex flex-col items-end">
-                    <div className="text-sm text-gray-900">
-                      Total Orders: {customer.totalOrders}
+                  <div className="divide-y divide-gray-200">
+                    {customerOrders.length === 0 ? (
+                      <div className="px-4 py-3 text-center text-gray-500">
+                        No orders found
                     </div>
-                    <div className="text-sm text-gray-900">
-                      Total Spent: ${customer.totalSpent.toFixed(2)}
-                    </div>
-                    <div className="mt-2">
-                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                        {customer.status}
+                    ) : (
+                      customerOrders.map((order) => (
+                        <div 
+                          key={order.id} 
+                          className={`px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors duration-150 ${
+                            selectedOrder?.id === order.id ? 'bg-blue-50' : ''
+                          }`}
+                          onClick={() => setSelectedOrder(order)}
+                        >
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">
+                                Order #{order.id.slice(-6).toUpperCase()}
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                {order.createdAt ? format(order.createdAt, 'MMM d, yyyy h:mm a') : 'N/A'}
+                              </p>
+                            </div>
+                            <div className="flex items-center space-x-4">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                order.status === 'delivered' ? 'bg-green-100 text-green-800' :
+                                order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                              </span>
+                              <span className="text-sm font-medium text-gray-900">
+                                ${(order.total || 0).toFixed(2)}
                       </span>
                     </div>
                   </div>
+                  {selectedOrder?.id === order.id && (
+                    <div className="mt-3 pt-3 border-t border-gray-200">
+                      <div className="space-y-2">
+                        <h4 className="text-sm font-medium text-gray-900">Order Details</h4>
+                        {order.items?.map((item, index) => (
+                          <div key={index} className="flex justify-between text-sm">
+                            <span className="text-gray-600">{item.name} x{item.quantity}</span>
+                            <span className="text-gray-900">${(item.price * item.quantity).toFixed(2)}</span>
+                          </div>
+                        ))}
+                        <div className="flex justify-between text-sm font-medium pt-2">
+                          <span className="text-gray-900">Total</span>
+                          <span className="text-gray-900">${(order.total || 0).toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="mt-2 text-sm text-gray-500">
-                  <span>Joined {new Date(customer.joinDate).toLocaleDateString()}</span>
-                  <span className="mx-2">•</span>
-                  <span>Last order {new Date(customer.lastOrder).toLocaleDateString()}</span>
+                      ))
+                    )}
+                  </div>
                 </div>
+              </>
+            ) : (
+              <div className="bg-white rounded-lg shadow-sm p-4 text-center text-gray-500">
+                Select a customer to view details
               </div>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* Pagination */}
-      <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-        <div className="flex-1 flex justify-between sm:hidden">
-          <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-            Previous
-          </button>
-          <button className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-            Next
-          </button>
-        </div>
-        <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm text-gray-700">
-              Showing <span className="font-medium">1</span> to <span className="font-medium">10</span> of{' '}
-              <span className="font-medium">97</span> results
-            </p>
-          </div>
-          <div>
-            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-              <button className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                Previous
-              </button>
-              <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
-                1
-              </button>
-              <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
-                2
-              </button>
-              <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
-                3
-              </button>
-              <button className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
-                Next
-              </button>
-            </nav>
+            )}
           </div>
         </div>
       </div>

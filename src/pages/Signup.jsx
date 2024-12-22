@@ -1,37 +1,62 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import SocialLogin from '../components/auth/SocialLogin';
 import { toast } from 'react-hot-toast';
+import Loader from '../components/utils/Loader';
 
 export default function Signup() {
-  const { signup } = useAuth();
-  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
   });
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { signup, user, loading: authLoading } = useAuth();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/');
+      }
+    }
+  }, [user, navigate]);
+
+  // Show loader while checking auth state
+  if (authLoading) {
+    return <Loader />;
+  }
+
+  // Don't render signup form if user is already authenticated
+  if (user) {
+    return null;
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+    setLoading(true);
+
     if (formData.password !== formData.confirmPassword) {
       toast.error('Passwords do not match');
+      setLoading(false);
       return;
     }
 
-    setLoading(true);
     try {
       await signup(formData.email, formData.password, {
         firstName: formData.firstName,
         lastName: formData.lastName,
         name: `${formData.firstName} ${formData.lastName}`
       });
+      navigate('/');
     } catch (error) {
-      console.error('Signup error:', error);
+      toast.error(error.message);
     } finally {
       setLoading(false);
     }

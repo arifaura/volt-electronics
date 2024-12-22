@@ -1,8 +1,10 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'react-hot-toast';
 import Loader from '../../components/utils/Loader';
+import { doc, getDoc } from 'firebase/firestore';
+import { db, auth } from '../../config/firebase';
 
 export default function AdminLogin() {
   const [formData, setFormData] = useState({
@@ -10,14 +12,49 @@ export default function AdminLogin() {
     password: '',
   });
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, logout, user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/');
+      }
+    }
+  }, [user, navigate]);
+
+  // Show loader while checking auth state
+  if (authLoading) {
+    return <Loader />;
+  }
+
+  // Don't render login form if user is already authenticated
+  if (user) {
+    return null;
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      await login(formData.email, formData.password, true); // true indicates admin login
+      await login(formData.email, formData.password);
+      
+      // After login, check if the user is an admin
+      const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+      const userData = userDoc.data();
+
+      if (userData?.role === 'admin') {
+        toast.success('Welcome back, Admin!');
+        navigate('/admin/dashboard');
+      } else {
+        // If not admin, log them out and show error
+        await logout();
+        toast.error('Access denied. Admin privileges required.');
+      }
     } catch (error) {
       toast.error(error.message);
     } finally {
@@ -32,10 +69,6 @@ export default function AdminLogin() {
       [name]: value
     }));
   };
-
-  if (loading) {
-    return <Loader />;
-  }
 
   return (
     <div className="min-h-screen bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -87,6 +120,26 @@ export default function AdminLogin() {
                   onChange={handleChange}
                   className="appearance-none block w-full px-3 py-2 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 bg-gray-700 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input
+                  id="remember-me"
+                  name="remember-me"
+                  type="checkbox"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded bg-gray-700"
+                />
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-300">
+                  Remember me
+                </label>
+              </div>
+
+              <div className="text-sm">
+                <Link to="/admin/forgot-password" className="font-medium text-blue-500 hover:text-blue-400">
+                  Forgot your password?
+                </Link>
               </div>
             </div>
 

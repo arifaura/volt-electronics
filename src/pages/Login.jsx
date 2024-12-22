@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import SocialLogin from '../components/auth/SocialLogin';
 import { toast } from 'react-hot-toast';
+import Loader from '../components/utils/Loader';
 
 export default function Login() {
   const [formData, setFormData] = useState({
@@ -11,7 +12,29 @@ export default function Login() {
   });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const location = useLocation();
+  const { login, user, loading: authLoading } = useAuth();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/');
+      }
+    }
+  }, [user, navigate]);
+
+  // Show loader while checking auth state
+  if (authLoading) {
+    return <Loader />;
+  }
+
+  // Don't render login form if user is already authenticated
+  if (user) {
+    return null;
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,7 +42,8 @@ export default function Login() {
 
     try {
       await login(formData.email, formData.password);
-      // Navigation is handled in AuthContext based on user role
+      const from = location.state?.from || '/';
+      navigate(from);
     } catch (error) {
       toast.error(error.message);
     } finally {

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Fragment } from 'react';
 import { Menu, Transition } from '@headlessui/react';
 import { 
@@ -6,55 +6,162 @@ import {
   SearchIcon, 
   UserCircleIcon,
   CogIcon,
-  LogoutIcon 
+  LogoutIcon,
+  MailIcon,
+  ShoppingCartIcon,
+  CheckCircleIcon
 } from '@heroicons/react/outline';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { collection, query, where, orderBy, limit, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { db } from '../../config/firebase';
+import { format } from 'date-fns';
+import { toast } from 'react-hot-toast';
+import { playNotificationSound } from '../../utils/notificationSound';
 
 export default function AdminNavbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [notifications, setNotifications] = useState({
+    messages: [],
+    orders: []
+  });
+  const previousNotificationsRef = useRef({ messages: [], orders: [] });
 
-  const notifications = [
-    { id: 1, message: 'New order #1234 received', time: '5 minutes ago' },
-    { id: 2, message: 'Stock alert: LED Bulbs running low', time: '1 hour ago' },
-    { id: 3, message: 'Customer support ticket #567 pending', time: '2 hours ago' },
-  ];
+  useEffect(() => {
+    // Query for unread messages
+    const messagesQuery = query(
+      collection(db, 'messages'),
+      where('status', '==', 'unread'),
+      where('isArchived', '==', false),
+      orderBy('createdAt', 'desc'),
+      limit(5)
+    );
+
+    // Query for new orders
+    const ordersQuery = query(
+      collection(db, 'orders'),
+      where('status', '==', 'pending'),
+      orderBy('createdAt', 'desc'),
+      limit(5)
+    );
+
+    // Subscribe to messages updates
+    const unsubscribeMessages = onSnapshot(messagesQuery, (snapshot) => {
+      const newMessages = snapshot.docs.map(doc => ({
+        id: doc.id,
+        type: 'message',
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate?.() || new Date()
+      }));
+
+      // Check for new messages
+      const previousMessageIds = new Set(previousNotificationsRef.current.messages.map(n => n.id));
+      const newMessageNotifications = newMessages.filter(n => !previousMessageIds.has(n.id));
+
+      if (newMessageNotifications.length > 0) {
+        playNotificationSound();
+        newMessageNotifications.forEach(message => {
+          toast.success(`New message from ${message.name}`, {
+            duration: 5000,
+            icon: '✉️'
+          });
+        });
+      }
+
+      setNotifications(prev => ({ ...prev, messages: newMessages }));
+      previousNotificationsRef.current.messages = newMessages;
+    });
+
+    // Subscribe to orders updates
+    const unsubscribeOrders = onSnapshot(ordersQuery, (snapshot) => {
+      const newOrders = snapshot.docs.map(doc => ({
+        id: doc.id,
+        type: 'order',
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate?.() || new Date()
+      }));
+
+      // Check for new orders
+      const previousOrderIds = new Set(previousNotificationsRef.current.orders.map(n => n.id));
+      const newOrderNotifications = newOrders.filter(n => !previousOrderIds.has(n.id));
+
+      if (newOrderNotifications.length > 0) {
+        playNotificationSound();
+        newOrderNotifications.forEach(order => {
+          toast.success(`New order #${order.id.slice(-6).toUpperCase()}`, {
+            duration: 5000,
+            icon: '🛍️'
+          });
+        });
+      }
+
+      setNotifications(prev => ({ ...prev, orders: newOrders }));
+      previousNotificationsRef.current.orders = newOrders;
+    });
+
+    return () => {
+      unsubscribeMessages();
+      unsubscribeOrders();
+    };
+  }, []);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
+  const markAsRead = async (e, notification) => {
+    e.stopPropagation();
+    try {
+      if (notification.type === 'message') {
+        const notificationRef = doc(db, 'messages', notification.id);
+        await updateDoc(notificationRef, {
+          status: 'read'
+        });
+        toast.success('Message marked as read');
+      } else if (notification.type === 'order') {
+        const notificationRef = doc(db, 'orders', notification.id);
+        await updateDoc(notificationRef, {
+          status: 'processing'
+        });
+        toast.success('Order marked as processing');
+      }
+    } catch (error) {
+      console.error('Error marking as read:', error);
+      toast.error('Failed to update status');
+    }
+  };
+
+  const handleNotificationClick = (notification) => {
+    if (notification.type === 'message') {
+      navigate('/admin/messages', { state: { selectedId: notification.id } });
+    } else if (notification.type === 'order') {
+      navigate('/admin/orders', { state: { selectedId: notification.id } });
+    }
+  };
+
+  const allNotifications = [
+    ...notifications.messages,
+    ...notifications.orders
+  ].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
   return (
-    <div className="bg-white shadow-sm">
-      <div className="px-4 sm:px-6 lg:px-8">
+    <div className="bg-white shadow">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
-          <div className="flex-1 flex items-center">
-            {/* Search Bar */}
-            <div className="max-w-lg w-full lg:max-w-xs">
-              <label htmlFor="search" className="sr-only">Search</label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <SearchIcon className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  id="search"
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                  placeholder="Search orders, products..."
-                  type="search"
-                />
-              </div>
+          <div className="flex">
+            <div className="flex-shrink-0 flex items-center">
+              <h1 className="text-2xl font-bold text-gray-900">Admin</h1>
             </div>
           </div>
 
           <div className="flex items-center space-x-4">
             {/* Notifications Dropdown */}
             <Menu as="div" className="relative">
-              <Menu.Button className="relative p-2 rounded-full text-gray-400 hover:text-gray-500">
-                <span className="sr-only">View notifications</span>
+              <Menu.Button className="relative p-1 rounded-full text-gray-700 hover:text-gray-900 focus:outline-none">
                 <BellIcon className="h-6 w-6" />
-                {notifications.length > 0 && (
+                {allNotifications.length > 0 && (
                   <span className="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-400 ring-2 ring-white" />
                 )}
               </Menu.Button>
@@ -67,30 +174,57 @@ export default function AdminNavbar() {
                 leaveFrom="transform opacity-100 scale-100"
                 leaveTo="transform opacity-0 scale-95"
               >
-                <Menu.Items className="origin-top-right absolute right-0 mt-2 w-80 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
+                <Menu.Items className="origin-top-right absolute right-0 mt-2 w-96 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
                   <div className="py-1">
-                    <div className="px-4 py-2 border-b border-gray-100">
-                      <h3 className="text-sm font-medium">Notifications</h3>
-                    </div>
-                    {notifications.map((notification) => (
-                      <Menu.Item key={notification.id}>
-                        {({ active }) => (
-                          <div
-                            className={`${
-                              active ? 'bg-gray-100' : ''
-                            } px-4 py-3 cursor-pointer`}
-                          >
-                            <p className="text-sm text-gray-900">{notification.message}</p>
-                            <p className="text-xs text-gray-500 mt-1">{notification.time}</p>
-                          </div>
-                        )}
-                      </Menu.Item>
-                    ))}
-                    <div className="px-4 py-2 border-t border-gray-100">
-                      <a href="#" className="text-sm text-blue-600 hover:text-blue-500">
-                        View all notifications
-                      </a>
-                    </div>
+                    {allNotifications.length === 0 ? (
+                      <div className="px-4 py-3 text-sm text-gray-500">
+                        No new notifications
+                      </div>
+                    ) : (
+                      allNotifications.map((notification) => (
+                        <Menu.Item key={notification.id}>
+                          {({ active }) => (
+                            <div
+                              onClick={() => handleNotificationClick(notification)}
+                              className={`${
+                                active ? 'bg-gray-100' : ''
+                              } px-4 py-3 cursor-pointer`}
+                            >
+                              <div className="flex justify-between items-start">
+                              <div className="flex items-start">
+                                  {notification.type === 'message' ? (
+                                    <MailIcon className="h-5 w-5 text-blue-500 mt-1" />
+                                  ) : (
+                                    <ShoppingCartIcon className="h-5 w-5 text-green-500 mt-1" />
+                                  )}
+                                  <div className="ml-3">
+                                  <p className="text-sm font-medium text-gray-900">
+                                    {notification.type === 'message'
+                                        ? `Message from ${notification.name}`
+                                        : `Order #${notification.id.slice(-6).toUpperCase()}`}
+                                  </p>
+                                    <p className="text-sm text-gray-500">
+                                    {notification.type === 'message'
+                                      ? notification.subject
+                                      : `${notification.items?.length || 0} items - $${notification.total?.toFixed(2) || '0.00'}`}
+                                  </p>
+                                    <p className="mt-1 text-xs text-gray-500">
+                                      {notification.createdAt ? format(notification.createdAt, 'MMM d, h:mm a') : 'Just now'}
+                                    </p>
+                                  </div>
+                                </div>
+                                    <button
+                                      onClick={(e) => markAsRead(e, notification)}
+                                  className="ml-3 text-sm text-blue-600 hover:text-blue-800"
+                                    >
+                                      Mark as read
+                                    </button>
+                              </div>
+                            </div>
+                          )}
+                        </Menu.Item>
+                      ))
+                    )}
                   </div>
                 </Menu.Items>
               </Transition>
@@ -113,32 +247,6 @@ export default function AdminNavbar() {
               >
                 <Menu.Items className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none">
                   <div className="py-1">
-                    <Menu.Item>
-                      {({ active }) => (
-                        <a
-                          href="#"
-                          className={`${
-                            active ? 'bg-gray-100' : ''
-                          } flex px-4 py-2 text-sm text-gray-700`}
-                        >
-                          <UserCircleIcon className="h-5 w-5 mr-2" />
-                          Your Profile
-                        </a>
-                      )}
-                    </Menu.Item>
-                    <Menu.Item>
-                      {({ active }) => (
-                        <a
-                          href="#"
-                          className={`${
-                            active ? 'bg-gray-100' : ''
-                          } flex px-4 py-2 text-sm text-gray-700`}
-                        >
-                          <CogIcon className="h-5 w-5 mr-2" />
-                          Settings
-                        </a>
-                      )}
-                    </Menu.Item>
                     <Menu.Item>
                       {({ active }) => (
                         <button
