@@ -9,7 +9,9 @@ import {
   LogoutIcon,
   MailIcon,
   ShoppingCartIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  MenuIcon,
+  XIcon
 } from '@heroicons/react/outline';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -19,7 +21,7 @@ import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
 import { playNotificationSound } from '../../utils/notificationSound';
 
-export default function AdminNavbar() {
+export default function AdminNavbar({ toggleSidebar, isSidebarOpen }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState({
@@ -151,6 +153,17 @@ export default function AdminNavbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex">
+            {/* Hamburger menu button */}
+            <button
+              onClick={toggleSidebar}
+              className="px-2 -ml-2 md:hidden"
+            >
+              {isSidebarOpen ? (
+                <XIcon className="h-6 w-6 text-gray-600" />
+              ) : (
+                <MenuIcon className="h-6 w-6 text-gray-600" />
+              )}
+            </button>
             <div className="flex-shrink-0 flex items-center">
               <h1 className="text-2xl font-bold text-gray-900">Admin</h1>
             </div>

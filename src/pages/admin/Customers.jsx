@@ -219,8 +219,13 @@ export default function Customers() {
       <div className="py-6 px-4 sm:px-6 lg:px-8">
         <div className="mb-4 space-y-3">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-semibold text-gray-900">Customers</h1>
-      </div>
+            <div className="flex items-center space-x-4">
+              <h1 className="text-2xl font-semibold text-gray-900">Customers</h1>
+              <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                {customers.length} total
+              </span>
+            </div>
+          </div>
 
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
             <div className="relative flex-1 max-w-xs">

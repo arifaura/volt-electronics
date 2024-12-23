@@ -10,7 +10,7 @@ import {
 } from '@heroicons/react/outline';
 import { motion } from 'framer-motion';
 
-export default function AdminSidebar() {
+export default function AdminSidebar({ isOpen, setIsOpen }) {
   const location = useLocation();
   
   const navigation = [
@@ -22,12 +22,38 @@ export default function AdminSidebar() {
     { name: 'Settings', href: '/admin/settings', icon: CogIcon },
   ];
 
+  const handleNavClick = () => {
+    if (window.innerWidth < 768) { // Only close on mobile
+      setIsOpen(false);
+    }
+  };
+
   return (
-    <div className="hidden lg:flex lg:flex-shrink-0">
-      <div className="flex flex-col w-64">
-        <div className="flex flex-col h-0 flex-1">
+    <>
+      {/* Mobile overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      <div className={`
+        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+        md:translate-x-0
+        fixed md:static
+        inset-y-0 left-0
+        z-30
+        transition-transform duration-300 ease-in-out
+        flex flex-col w-64
+      `}>
+        <div className="flex flex-col h-full">
           <div className="flex items-center h-16 flex-shrink-0 px-4 bg-gray-900">
-            <Link to="/admin/dashboard" className="text-white font-bold text-xl">
+            <Link 
+              to="/admin/dashboard" 
+              className="text-white font-bold text-xl"
+              onClick={handleNavClick}
+            >
               Admin Panel
             </Link>
           </div>
@@ -43,6 +69,7 @@ export default function AdminSidebar() {
                   >
                     <Link
                       to={item.href}
+                      onClick={handleNavClick}
                       className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
                         isActive
                           ? 'bg-gray-900 text-white'
@@ -66,6 +93,6 @@ export default function AdminSidebar() {
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 } 
