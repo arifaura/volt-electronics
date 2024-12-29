@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, updateDoc, doc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { ShoppingBagIcon, XIcon, PlusIcon, MinusIcon } from '@heroicons/react/outline';
 import { toast } from 'react-hot-toast';
@@ -57,14 +57,17 @@ export default function Cart() {
         return;
       }
 
+      const now = serverTimestamp();
+
       // Create the order with payment details and address
       const orderData = {
         items: items,
+        userId: user.uid,
         customerInfo: {
-          userId: user.uid,
           name: user.name || user.displayName,
           email: user.email
         },
+        name: user.name || user.displayName,
         shippingAddress: selectedAddress,
         orderSummary: {
           subtotal: calculateSubtotal(),
@@ -80,12 +83,16 @@ export default function Cart() {
           }
         },
         status: 'pending',
-        createdAt: serverTimestamp()
+        createdAt: now,
+        processingAt: null,
+        packagedAt: null,
+        shippedAt: null,
+        deliveredAt: null
       };
 
       // Create the order in Firestore
       const ordersRef = collection(db, 'orders');
-      await addDoc(ordersRef, orderData);
+      const orderRef = await addDoc(ordersRef, orderData);
 
       // Clear cart and local storage
       clearCart();
@@ -96,9 +103,9 @@ export default function Cart() {
 
       // Navigate to profile orders page
       navigate('/profile', { state: { activeTab: 'orders' } });
+
     } catch (error) {
       console.error('Error placing order:', error);
-      // Re-throw the error to be handled by the PaymentSection
       throw new Error('Failed to place order. Please try again.');
     }
   };

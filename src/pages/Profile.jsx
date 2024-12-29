@@ -104,37 +104,32 @@ export default function Profile() {
       return undefined;
     }
 
-      setOrdersLoading(true);
-        const ordersRef = collection(db, 'orders');
+    setOrdersLoading(true);
+    const ordersRef = collection(db, 'orders');
+
+    // Simplified query with just userId and createdAt
+    const q = query(
+      ordersRef,
+      where('userId', '==', user.uid),
+      orderBy('createdAt', 'desc')
+    );
     
-    // Create the query
-          const q = query(
-            ordersRef,
-      where('customerInfo.userId', '==', user.uid)
-          );
-          
     // Set up real-time listener
-        return onSnapshot(q, (snapshot) => {
-            const ordersList = snapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data(),
-              createdAt: doc.data().createdAt?.toDate().toLocaleString()
-            }))
-      // Sort in memory while index is being built
-            .sort((a, b) => {
-        const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
-        const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
-              return dateB - dateA;
-            });
+    return onSnapshot(q, (snapshot) => {
+      const ordersList = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate().toLocaleString()
+      }));
       
-            setOrders(ordersList);
-              setOrdersLoading(false);
-            }, (error) => {
-              console.error('Error in real-time orders:', error);
-              toast.error('Failed to load orders');
-              setOrders([]);
-              setOrdersLoading(false);
-            });
+      setOrders(ordersList);
+      setOrdersLoading(false);
+    }, (error) => {
+      console.error('Error in real-time orders:', error);
+      toast.error('Failed to load orders');
+      setOrders([]);
+      setOrdersLoading(false);
+    });
   };
 
   useEffect(() => {
