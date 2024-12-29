@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { doc, updateDoc, collection, getDocs, addDoc, query, where, orderBy, writeBatch, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, collection, getDocs, addDoc, query, where, orderBy, writeBatch, deleteDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { toast } from 'react-hot-toast';
 import { 
@@ -10,7 +10,14 @@ import {
   LocationMarkerIcon,
   BellIcon,
   CreditCardIcon,
-  DeviceMobileIcon
+  DeviceMobileIcon,
+  XIcon,
+  PlusCircleIcon,
+  CreditCardIcon as CreditCardIconSolid,
+  LockClosedIcon,
+  TrashIcon,
+  CheckCircleIcon,
+  StarIcon
 } from '@heroicons/react/outline';
 import { Link, useLocation } from 'react-router-dom';
 
@@ -27,6 +34,7 @@ export default function Profile() {
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [savedCards, setSavedCards] = useState([]);
   const [showAddPayment, setShowAddPayment] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState('all');
 
   const [profileData, setProfileData] = useState({
     name: user?.name || '',
@@ -63,6 +71,15 @@ export default function Profile() {
     instructions: '' // Delivery instructions
   });
 
+  const [newPaymentMethod, setNewPaymentMethod] = useState({
+    cardNumber: '',
+    cardHolder: '',
+    expiryMonth: '',
+    expiryYear: '',
+    cvv: '',
+    isDefault: false
+  });
+
   const fetchAddresses = async () => {
     try {
       const addressesRef = collection(db, `users/${user.uid}/addresses`);
@@ -82,68 +99,58 @@ export default function Profile() {
     fetchAddresses();
   }, [user.uid]);
 
-  const fetchOrders = async () => {
-    if (activeTab === 'orders') {
+  const fetchOrders = () => {
+    if (activeTab !== 'orders') {
+      return undefined;
+    }
+
       setOrdersLoading(true);
-      try {
         const ordersRef = collection(db, 'orders');
-        try {
-          // Try with the indexed query first
+    
+    // Create the query
           const q = query(
             ordersRef,
-            where('customerInfo.userId', '==', user.uid),
-            orderBy('createdAt', 'desc')
+      where('customerInfo.userId', '==', user.uid)
           );
-          const snapshot = await getDocs(q);
-          const ordersList = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            createdAt: doc.data().createdAt?.toDate().toLocaleString()
-          }));
-          setOrders(ordersList);
-        } catch (indexError) {
-          if (indexError.code === 'failed-precondition') {
-            // Fallback to a simple query while index is building
-            console.warn('Index not ready, using fallback query');
-            const simpleQuery = query(
-              ordersRef,
-              where('customerInfo.userId', '==', user.uid)
-            );
-            const snapshot = await getDocs(simpleQuery);
+          
+    // Set up real-time listener
+        return onSnapshot(q, (snapshot) => {
             const ordersList = snapshot.docs.map(doc => ({
               id: doc.id,
               ...doc.data(),
               createdAt: doc.data().createdAt?.toDate().toLocaleString()
             }))
+      // Sort in memory while index is being built
             .sort((a, b) => {
-              const dateA = new Date(a.createdAt);
-              const dateB = new Date(b.createdAt);
+        const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+        const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
               return dateB - dateA;
             });
+      
             setOrders(ordersList);
-          } else {
-            throw indexError;
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching orders:', error);
-        toast.error('Failed to load orders');
-        setOrders([]);
-      } finally {
-        setOrdersLoading(false);
-      }
-    }
+              setOrdersLoading(false);
+            }, (error) => {
+              console.error('Error in real-time orders:', error);
+              toast.error('Failed to load orders');
+              setOrders([]);
+              setOrdersLoading(false);
+            });
   };
+
+  useEffect(() => {
+    const unsubscribe = fetchOrders();
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
+  }, [user.uid, activeTab]);
 
   useEffect(() => {
     if (location.state?.activeTab) {
       setActiveTab(location.state.activeTab);
     }
   }, [location.state]);
-
-  useEffect(() => {
-    fetchOrders();
-  }, [user.uid, activeTab]);
 
   useEffect(() => {
     const fetchCards = async () => {
@@ -391,11 +398,22 @@ export default function Profile() {
     }
   };
 
-  const handleAddPayment = async (paymentDetails) => {
+  const handleAddPayment = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
     try {
+      // Basic validation
+      if (!newPaymentMethod.cardNumber || !newPaymentMethod.cardHolder || 
+          !newPaymentMethod.expiryMonth || !newPaymentMethod.expiryYear || !newPaymentMethod.cvv) {
+        toast.error('Please fill in all fields');
+        return;
+      }
+
       const cardsRef = collection(db, `users/${user.uid}/paymentMethods`);
       
-      if (paymentDetails.isDefault) {
+      // If setting as default, update other cards
+      if (newPaymentMethod.isDefault) {
         const snapshot = await getDocs(cardsRef);
         const batch = writeBatch(db);
         snapshot.docs.forEach((doc) => {
@@ -404,11 +422,31 @@ export default function Profile() {
         await batch.commit();
       }
 
-      await addDoc(cardsRef, {
-        ...paymentDetails,
+      // Format card data for storage
+      const cardData = {
+        last4: newPaymentMethod.cardNumber.slice(-4),
+        cardHolder: newPaymentMethod.cardHolder,
+        expMonth: newPaymentMethod.expiryMonth,
+        expYear: newPaymentMethod.expiryYear,
+        isDefault: newPaymentMethod.isDefault,
+        brand: getCardBrand(newPaymentMethod.cardNumber),
         createdAt: new Date().toISOString()
-      });
+      };
 
+      await addDoc(cardsRef, cardData);
+      
+      // Reset form and refresh cards
+      setNewPaymentMethod({
+        cardNumber: '',
+        cardHolder: '',
+        expiryMonth: '',
+        expiryYear: '',
+        cvv: '',
+        isDefault: false
+      });
+      setShowAddPayment(false);
+      toast.success('Payment method added successfully');
+      
       // Refresh the cards list
       const newSnapshot = await getDocs(cardsRef);
       const cardsList = newSnapshot.docs.map(doc => ({
@@ -416,12 +454,52 @@ export default function Profile() {
         ...doc.data()
       }));
       setSavedCards(cardsList);
-      
-      setShowAddPayment(false);
-      toast.success('Payment method added successfully');
     } catch (error) {
       console.error('Error adding payment method:', error);
       toast.error('Failed to add payment method');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getCardBrand = (number) => {
+    // Basic card brand detection
+    const firstDigit = number.charAt(0);
+    const firstTwoDigits = number.substring(0, 2);
+    
+    if (number.startsWith('4')) return 'visa';
+    if (['51', '52', '53', '54', '55'].includes(firstTwoDigits)) return 'mastercard';
+    if (['34', '37'].includes(firstTwoDigits)) return 'amex';
+    return 'unknown';
+  };
+
+  const handleSetDefaultCard = async (cardId) => {
+    try {
+      const cardsRef = collection(db, `users/${user.uid}/paymentMethods`);
+      const batch = writeBatch(db);
+
+      // First, set all cards to non-default
+      const snapshot = await getDocs(cardsRef);
+      snapshot.docs.forEach((doc) => {
+        batch.update(doc.ref, { isDefault: false });
+      });
+
+      // Then set the selected card as default
+      const selectedCardRef = doc(db, `users/${user.uid}/paymentMethods/${cardId}`);
+      batch.update(selectedCardRef, { isDefault: true });
+
+      await batch.commit();
+
+      // Update the local state
+      setSavedCards(prev => prev.map(card => ({
+        ...card,
+        isDefault: card.id === cardId
+      })));
+
+      toast.success('Default payment method updated');
+    } catch (error) {
+      console.error('Error setting default card:', error);
+      toast.error('Failed to update default payment method');
     }
   };
 
@@ -626,6 +704,35 @@ export default function Profile() {
                 <h3 className="text-lg leading-6 font-medium text-gray-900">
                   Order History
                 </h3>
+
+                {/* Order Status Tabs */}
+                <div className="mt-4 border-b border-gray-200">
+                  <nav className="-mb-px flex space-x-4 overflow-x-auto" aria-label="Order status tabs">
+                    <button
+                      onClick={() => setSelectedStatus('all')}
+                      className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm
+                        ${selectedStatus === 'all' 
+                          ? 'border-blue-500 text-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        }`}
+                    >
+                      All Orders
+                    </button>
+                    {['Pending', 'Processing', 'Packed', 'Shipped', 'Delivered', 'Cancelled', 'Refunded'].map((status) => (
+                      <button
+                        key={status}
+                        onClick={() => setSelectedStatus(status.toLowerCase())}
+                        className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm
+                          ${selectedStatus === status.toLowerCase()
+                            ? 'border-blue-500 text-blue-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                          }`}
+                      >
+                        {status}
+                      </button>
+                    ))}
+                  </nav>
+                </div>
                 
                 {ordersLoading ? (
                   <div className="py-10 text-center">
@@ -634,12 +741,14 @@ export default function Profile() {
                   </div>
                 ) : orders.length > 0 ? (
                   <div className="mt-6 space-y-4">
-                        {orders.map((order) => (
+                    {orders
+                      .filter(order => selectedStatus === 'all' || order.status?.toLowerCase() === selectedStatus)
+                      .map((order) => (
                       <div key={order.id} className="border rounded-lg p-4">
                         <div className="flex justify-between items-start">
                           <div>
                             <p className="text-sm font-medium text-gray-900">
-                              Order #{order.id.slice(-8)}
+                              Order #{order.id}
                             </p>
                             <p className="text-sm text-gray-500">{order.createdAt}</p>
                             <p className="text-sm text-gray-600 mt-1">
@@ -838,7 +947,7 @@ export default function Profile() {
                         <div>
                           <div className="flex items-center">
                             <span className="text-sm font-medium text-gray-900">
-                              {address.type.charAt(0).toUpperCase() + address.type.slice(1)}
+                              {(address.type || 'Home').charAt(0).toUpperCase() + (address.type || 'Home').slice(1)}
                             </span>
                             {address.isDefault && (
                               <span className="ml-2 px-2 py-1 text-xs font-medium text-green-800 bg-green-100 rounded-full">
@@ -1087,16 +1196,20 @@ export default function Profile() {
           )}
 
           {activeTab === 'payments' && (
-            <div className="bg-white shadow sm:rounded-lg">
+            <div className="bg-white shadow sm:rounded-lg overflow-hidden">
               <div className="px-4 py-5 sm:p-6">
                 <div className="flex justify-between items-center">
+                  <div className="flex items-center space-x-2">
+                    <CreditCardIconSolid className="h-6 w-6 text-blue-600" />
                   <h3 className="text-lg leading-6 font-medium text-gray-900">
                     Payment Methods
                   </h3>
+                  </div>
                   <button
                     onClick={() => setShowAddPayment(true)}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-150"
                   >
+                    <PlusCircleIcon className="h-5 w-5 mr-2" />
                     Add Payment Method
                   </button>
         </div>
@@ -1105,43 +1218,232 @@ export default function Profile() {
                   {savedCards.map((card) => (
                     <div
                       key={card.id}
-                      className="border rounded-lg p-4 flex justify-between items-center"
+                      className="relative group bg-white border border-gray-200 hover:border-blue-200 rounded-xl p-4 transition-all duration-200 hover:shadow-lg"
                     >
+                      <div className="flex justify-between items-center">
                       <div className="flex items-center space-x-4">
-                        <div className="text-2xl">
+                          <div className="w-14 h-10 flex items-center justify-center rounded-md bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200">
                           {getCardIcon(card.brand)}
                         </div>
                         <div>
+                            <div className="flex items-center space-x-2">
                           <p className="text-sm font-medium text-gray-900">
-                            •••• •••• •••• {card.last4}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            Expires {card.expMonth}/{card.expYear}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex space-x-2">
+                                •••• {card.last4}
+                              </p>
                         {card.isDefault && (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                  <CheckCircleIcon className="h-3 w-3 mr-1" />
                             Default
                           </span>
+                              )}
+                            </div>
+                            <div className="flex items-center mt-1 text-sm text-gray-500">
+                              <LockClosedIcon className="h-3 w-3 mr-1" />
+                              <span>Expires {card.expMonth}/{card.expYear}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          {!card.isDefault && (
+                            <button
+                              onClick={() => handleSetDefaultCard(card.id)}
+                              className="p-2 text-gray-400 hover:text-yellow-500 transition-colors duration-150"
+                              title="Set as default"
+                            >
+                              <StarIcon className="h-5 w-5" />
+                            </button>
                         )}
                         <button
                           onClick={() => handleDeleteCard(card.id)}
-                          className="text-red-600 hover:text-red-800"
+                            className="p-2 text-gray-400 hover:text-red-500 transition-colors duration-150"
+                            title="Remove card"
                         >
-                          Remove
+                            <TrashIcon className="h-5 w-5" />
                         </button>
+                        </div>
                       </div>
                     </div>
                   ))}
 
                   {savedCards.length === 0 && (
-                    <div className="text-center py-6">
-                      <p className="text-sm text-gray-500">No payment methods added yet</p>
+                    <div className="text-center py-12 px-4 border-2 border-dashed border-gray-200 rounded-lg">
+                      <CreditCardIconSolid className="mx-auto h-12 w-12 text-gray-300" />
+                      <h3 className="mt-2 text-sm font-medium text-gray-900">No payment methods</h3>
+                      <p className="mt-1 text-sm text-gray-500">Add a payment method to save it for future purchases.</p>
+                      <div className="mt-6">
+                        <button
+                          onClick={() => setShowAddPayment(true)}
+                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                        >
+                          <PlusCircleIcon className="h-5 w-5 mr-2" />
+                          Add Payment Method
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {showAddPayment && (
+            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+              <div className="bg-white rounded-xl p-6 max-w-md w-full m-4 shadow-2xl transform transition-all">
+                <div className="flex justify-between items-center mb-6">
+                  <div className="flex items-center space-x-2">
+                    <CreditCardIconSolid className="h-6 w-6 text-blue-600" />
+                  <h3 className="text-lg font-medium text-gray-900">Add Payment Method</h3>
+                  </div>
+                  <button
+                    onClick={() => setShowAddPayment(false)}
+                    className="text-gray-400 hover:text-gray-500 transition-colors duration-150"
+                  >
+                    <span className="sr-only">Close</span>
+                    <XIcon className="h-6 w-6" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleAddPayment} className="space-y-6">
+                  <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Card Number</label>
+                      <div className="mt-1 relative rounded-md shadow-sm">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <CreditCardIconSolid className="h-5 w-5 text-gray-400" />
+                        </div>
+                    <input
+                      type="text"
+                      maxLength="16"
+                      value={newPaymentMethod.cardNumber}
+                      onChange={(e) => setNewPaymentMethod(prev => ({
+                        ...prev,
+                        cardNumber: e.target.value.replace(/\D/g, '').slice(0, 16)
+                      }))}
+                          className="pl-10 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-150"
+                      placeholder="1234 5678 9012 3456"
+                    />
+                      </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Card Holder Name</label>
+                      <div className="mt-1 relative rounded-md shadow-sm">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <UserCircleIcon className="h-5 w-5 text-gray-400" />
+                        </div>
+                    <input
+                      type="text"
+                      value={newPaymentMethod.cardHolder}
+                      onChange={(e) => setNewPaymentMethod(prev => ({
+                        ...prev,
+                        cardHolder: e.target.value
+                      }))}
+                          className="pl-10 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-150"
+                      placeholder="John Doe"
+                    />
+                      </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Month</label>
+                      <select
+                        value={newPaymentMethod.expiryMonth}
+                        onChange={(e) => setNewPaymentMethod(prev => ({
+                          ...prev,
+                          expiryMonth: e.target.value
+                        }))}
+                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-150"
+                      >
+                        <option value="">MM</option>
+                        {Array.from({ length: 12 }, (_, i) => {
+                          const month = (i + 1).toString().padStart(2, '0');
+                          return (
+                            <option key={month} value={month}>
+                              {month}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Year</label>
+                      <select
+                        value={newPaymentMethod.expiryYear}
+                        onChange={(e) => setNewPaymentMethod(prev => ({
+                          ...prev,
+                          expiryYear: e.target.value
+                        }))}
+                          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-150"
+                      >
+                        <option value="">YYYY</option>
+                        {Array.from({ length: 10 }, (_, i) => {
+                          const year = (new Date().getFullYear() + i).toString();
+                          return (
+                            <option key={year} value={year}>
+                              {year}
+                            </option>
+                          );
+                        })}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">CVV</label>
+                        <div className="mt-1 relative rounded-md shadow-sm">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <LockClosedIcon className="h-4 w-4 text-gray-400" />
+                          </div>
+                      <input
+                        type="text"
+                        maxLength="4"
+                        value={newPaymentMethod.cvv}
+                        onChange={(e) => setNewPaymentMethod(prev => ({
+                          ...prev,
+                          cvv: e.target.value.replace(/\D/g, '').slice(0, 4)
+                        }))}
+                            className="pl-10 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-150"
+                        placeholder="123"
+                      />
+                        </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="default-payment"
+                      checked={newPaymentMethod.isDefault}
+                      onChange={(e) => setNewPaymentMethod(prev => ({
+                        ...prev,
+                        isDefault: e.target.checked
+                      }))}
+                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded transition-colors duration-150"
+                    />
+                    <label htmlFor="default-payment" className="ml-2 text-sm text-gray-700">
+                      Set as default payment method
+                    </label>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end space-x-3 mt-6 pt-4 border-t">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddPayment(false)}
+                      className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors duration-150"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-md transition-all duration-150 disabled:opacity-50"
+                    >
+                      {loading ? 'Adding...' : 'Add Payment Method'}
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           )}

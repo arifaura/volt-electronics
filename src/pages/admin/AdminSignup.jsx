@@ -24,11 +24,11 @@ export default function AdminSignup() {
         throw new Error('Passwords do not match');
       }
 
-      await signup({
-        email: formData.email,
-        password: formData.password,
+      await signup(formData.email, formData.password, {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
         name: `${formData.firstName} ${formData.lastName}`,
-        role: 'admin' // Make sure this is being passed
+        role: 'admin'
       });
     } catch (error) {
       toast.error(error.message);

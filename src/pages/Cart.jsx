@@ -2,16 +2,21 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { collection, addDoc, serverTimestamp, getDocs, query } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { ShoppingBagIcon, XIcon, PlusIcon, MinusIcon } from '@heroicons/react/outline';
 import { toast } from 'react-hot-toast';
+import PaymentSection from '../components/checkout/PaymentSection';
+import AddressSection from '../components/checkout/AddressSection';
 
 export default function Cart() {
   const { items = [], removeFromCart, updateQuantity, clearCart } = useCart();
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [selectedAddress, setSelectedAddress] = useState(null);
+  const [paymentProcessed, setPaymentProcessed] = useState(false);
 
   // Calculate subtotal with error handling
   const calculateSubtotal = () => {
@@ -41,63 +46,69 @@ export default function Cart() {
     toast.success('Item removed from cart');
   };
 
-  const handleCheckout = async () => {
-    setLoading(true);
-    try {
-      // Get user's default address
-      const addressesRef = collection(db, `users/${user.uid}/addresses`);
-      const addressesSnapshot = await getDocs(query(addressesRef));
-      const addresses = addressesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      const defaultAddress = addresses.find(addr => addr.isDefault) || addresses[0];
+  const handleAddressSelect = (address) => {
+    setSelectedAddress(address);
+  };
 
-      // Save order to Firestore with enhanced data
+  const handlePaymentComplete = async (paymentDetails) => {
+    try {
+      if (!selectedAddress) {
+        toast.error('Please select a delivery address');
+        return;
+      }
+
+      // Create the order with payment details and address
       const orderData = {
-        items: items.map(item => ({
-          id: item.id,
-          title: item.title,
-          price: item.price,
-          quantity: item.quantity,
-          image: item.image,
-          total: item.price * item.quantity // Add item total
-        })),
+        items: items,
         customerInfo: {
-          name: user.displayName || user.name || '', // Add name from user
-          email: user.email,
           userId: user.uid,
-          address: defaultAddress ? `${defaultAddress.address}, ${defaultAddress.city}, ${defaultAddress.state} ${defaultAddress.zipCode}` : '',
-          shippingAddress: defaultAddress || null
+          name: user.name || user.displayName,
+          email: user.email
         },
+        shippingAddress: selectedAddress,
         orderSummary: {
-          subtotal,
-          shipping,
-          total,
-          itemCount: items.reduce((sum, item) => sum + item.quantity, 0)
+          subtotal: calculateSubtotal(),
+          shipping: shipping,
+          total: total,
+          itemCount: items.length
+        },
+        paymentDetails: {
+          method: paymentDetails.paymentMethod,
+          card: {
+            last4: paymentDetails.card.last4,
+            brand: paymentDetails.card.brand
+          }
         },
         status: 'pending',
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        createdAt: serverTimestamp()
       };
 
+      // Create the order in Firestore
       const ordersRef = collection(db, 'orders');
       await addDoc(ordersRef, orderData);
 
-      // Clear cart
+      // Clear cart and local storage
       clearCart();
-
-      // Show success message
+      localStorage.removeItem('cartItems');
+      
+      setPaymentProcessed(true);
       toast.success('Order placed successfully!');
 
       // Navigate to profile orders page
       navigate('/profile', { state: { activeTab: 'orders' } });
     } catch (error) {
-      console.error('Checkout error:', error);
-      toast.error('Failed to process checkout. Please try again.');
-    } finally {
-      setLoading(false);
+      console.error('Error placing order:', error);
+      // Re-throw the error to be handled by the PaymentSection
+      throw new Error('Failed to place order. Please try again.');
     }
+  };
+
+  const handleProceedToPayment = () => {
+    if (!selectedAddress) {
+      toast.error('Please select a delivery address');
+      return;
+    }
+    setIsCheckingOut(true);
   };
 
   const subtotal = calculateSubtotal();
@@ -130,8 +141,9 @@ export default function Cart() {
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Shopping Cart</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Cart Items */}
-          <div className="lg:col-span-8">
+          {/* Cart Items and Address Section */}
+          <div className="lg:col-span-8 space-y-6">
+            {/* Cart Items */}
             <div className="bg-white shadow-sm rounded-lg">
               <ul className="divide-y divide-gray-200">
                 {items.map((item) => (
@@ -182,6 +194,19 @@ export default function Cart() {
                 ))}
               </ul>
             </div>
+
+            {/* Address Section */}
+            {!isCheckingOut && (
+              <AddressSection onAddressSelect={handleAddressSelect} />
+            )}
+
+            {/* Payment Section */}
+            {isCheckingOut && (
+              <PaymentSection
+                onPaymentComplete={handlePaymentComplete}
+                total={total}
+              />
+            )}
           </div>
 
           {/* Order Summary */}
@@ -219,22 +244,25 @@ export default function Cart() {
                   </div>
                 )}
 
-                <button
-                  onClick={handleCheckout}
-                  disabled={loading || items.length === 0}
-                  className={`w-full mt-6 bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-300 ${
-                    loading || items.length === 0 ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                >
-                  {loading ? (
-                    <div className="flex items-center justify-center">
-                      <div className="w-5 h-5 border-t-2 border-b-2 border-white rounded-full animate-spin mr-2" />
-                      Processing...
-                    </div>
-                  ) : (
-                    'Proceed to Checkout'
-                  )}
-                </button>
+                {items.length > 0 && (
+                  <div className="mt-6">
+                    {!isCheckingOut ? (
+                      <button
+                        onClick={handleProceedToPayment}
+                        className="w-full flex justify-center items-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700"
+                      >
+                        Proceed to Payment
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setIsCheckingOut(false)}
+                        className="w-full flex justify-center items-center px-6 py-3 border border-gray-300 rounded-md shadow-sm text-base font-medium text-gray-700 bg-white hover:bg-gray-50"
+                      >
+                        Back to Cart
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>

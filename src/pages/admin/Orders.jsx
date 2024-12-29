@@ -20,7 +20,8 @@ import {
   ExclamationIcon,
   UserCircleIcon,
   MailIcon,
-  LocationMarkerIcon
+  LocationMarkerIcon,
+  CreditCardIcon
 } from '@heroicons/react/outline';
 import { motion, AnimatePresence } from 'framer-motion';
 import { playNotificationSound } from '../../utils/notificationSound';
@@ -374,9 +375,17 @@ export default function Orders() {
                           <h4 className="text-sm font-medium text-gray-900 mb-2">Order Items</h4>
                           <div className="space-y-2">
                             {order.items?.map((item, index) => (
-                              <div key={index} className="flex justify-between text-sm">
-                                <span className="text-gray-600">{item.name} x{item.quantity}</span>
-                                <span className="text-gray-900">
+                              <div key={index} className="flex items-center space-x-3">
+                                <img 
+                                  src={item.image} 
+                                  alt={item.name} 
+                                  className="w-12 h-12 object-cover rounded-md"
+                                />
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium text-gray-900">{item.name || item.title}</p>
+                                  <p className="text-xs text-gray-600">Qty: {item.quantity} × ${(item.price || 0).toFixed(2)}</p>
+                                </div>
+                                <span className="text-sm text-gray-900">
                                   ${((item.price || 0) * (item.quantity || 0)).toFixed(2)}
                                 </span>
                               </div>
@@ -474,6 +483,67 @@ export default function Orders() {
                             </div>
                           )}
                           
+                          {/* Shipping Address */}
+                          <div className="mt-4 pt-4 border-t border-gray-200">
+                            <h4 className="text-sm font-medium text-gray-900 mb-2">Shipping Address</h4>
+                            <div className="bg-gray-50 rounded-lg p-3">
+                              {order.shippingAddress ? (
+                                <>
+                                  <p className="text-sm text-gray-900">{order.shippingAddress.name}</p>
+                                  <p className="text-sm text-gray-600 mt-1">{order.shippingAddress.address}</p>
+                                  <p className="text-sm text-gray-600">
+                                    {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zipCode}
+                                  </p>
+                                  {order.shippingAddress.phone && (
+                                    <p className="text-sm text-gray-600 mt-1">Phone: {order.shippingAddress.phone}</p>
+                                  )}
+                                </>
+                              ) : (
+                                <p className="text-sm text-gray-500">No shipping address available</p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Payment Information */}
+                          <div className="mt-4 pt-4 border-t border-gray-200">
+                            <h4 className="text-sm font-medium text-gray-900 mb-2">Payment Information</h4>
+                            <div className="bg-gray-50 rounded-lg p-3">
+                              {order.paymentDetails ? (
+                                <>
+                                  <div className="flex items-center space-x-3">
+                                    <CreditCardIcon className="h-5 w-5 text-gray-400" />
+                                    <div>
+                                      <p className="text-sm text-gray-900">
+                                        {order.paymentDetails.card?.brand?.toUpperCase()} •••• {order.paymentDetails.card?.last4}
+                                      </p>
+                                      <p className="text-xs text-gray-600">
+                                        Expires {order.paymentDetails.card?.expMonth}/{order.paymentDetails.card?.expYear}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="mt-2 pt-2 border-t border-gray-200">
+                                    <p className="text-sm text-gray-600">
+                                      Status: <span className={`font-medium ${
+                                        order.paymentDetails.status === 'paid' ? 'text-green-600' :
+                                        order.paymentDetails.status === 'pending' ? 'text-yellow-600' :
+                                        'text-red-600'
+                                      }`}>
+                                        {order.paymentDetails.status?.charAt(0).toUpperCase() + order.paymentDetails.status?.slice(1)}
+                                      </span>
+                                    </p>
+                                    {order.paymentDetails.transactionId && (
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        Transaction ID: {order.paymentDetails.transactionId}
+                                      </p>
+                                    )}
+                                  </div>
+                                </>
+                              ) : (
+                                <p className="text-sm text-gray-500">No payment information available</p>
+                              )}
+                            </div>
+                          </div>
+
                           {/* Tracking Information */}
                           {order.trackingNumber && (
                             <div className="mt-4">

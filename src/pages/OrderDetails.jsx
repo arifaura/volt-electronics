@@ -3,7 +3,14 @@ import { useParams, Link } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { toast } from 'react-hot-toast';
-import { ArrowLeftIcon } from '@heroicons/react/outline';
+import { 
+  ArrowLeftIcon,
+  LocationMarkerIcon,
+  CreditCardIcon,
+  UserIcon,
+  PhoneIcon,
+  MailIcon
+} from '@heroicons/react/outline';
 
 export default function OrderDetails() {
   const { orderId } = useParams();
@@ -35,6 +42,19 @@ export default function OrderDetails() {
 
     fetchOrder();
   }, [orderId]);
+
+  const getCardIcon = (brand) => {
+    switch (brand?.toLowerCase()) {
+      case 'visa':
+        return '💳 Visa';
+      case 'mastercard':
+        return '💳 Mastercard';
+      case 'amex':
+        return '💳 Amex';
+      default:
+        return '💳';
+    }
+  };
 
   if (loading) {
     return (
@@ -143,17 +163,93 @@ export default function OrderDetails() {
           {/* Customer Information */}
           <div className="px-6 py-4 border-t border-gray-200">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Customer Information</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <p className="text-sm font-medium text-gray-500">Name</p>
-                <p className="mt-1">{order.customerInfo.name}</p>
+                <div className="flex items-center mb-2">
+                  <UserIcon className="h-5 w-5 text-gray-400 mr-2" />
+                  <span className="text-sm font-medium text-gray-500">Name</span>
+                </div>
+                <p className="text-gray-900">{order.customerInfo.name}</p>
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500">Email</p>
-                <p className="mt-1">{order.customerInfo.email}</p>
+                <div className="flex items-center mb-2">
+                  <MailIcon className="h-5 w-5 text-gray-400 mr-2" />
+                  <span className="text-sm font-medium text-gray-500">Email</span>
+                </div>
+                <p className="text-gray-900">{order.customerInfo.email}</p>
               </div>
             </div>
           </div>
+
+          {/* Shipping Address */}
+          {order.shippingAddress && (
+            <div className="px-6 py-4 border-t border-gray-200">
+              <div className="flex items-center mb-4">
+                <LocationMarkerIcon className="h-5 w-5 text-gray-400 mr-2" />
+                <h3 className="text-lg font-medium text-gray-900">Shipping Address</h3>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-base font-medium text-gray-900">{order.shippingAddress.name}</p>
+                    <div className="flex items-center mt-2">
+                      <PhoneIcon className="h-4 w-4 text-gray-400 mr-2" />
+                      <p className="text-sm text-gray-600">{order.shippingAddress.phone}</p>
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t border-gray-200">
+                    <p className="text-sm text-gray-600">
+                      {order.shippingAddress.address}
+                    </p>
+                    {order.shippingAddress.address2 && (
+                      <p className="text-sm text-gray-600">
+                        {order.shippingAddress.address2}
+                      </p>
+                    )}
+                    <p className="text-sm text-gray-600">
+                      {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.zipCode}
+                    </p>
+                    {order.shippingAddress.country && (
+                      <p className="text-sm text-gray-600">
+                        {order.shippingAddress.country}
+                      </p>
+                    )}
+                  </div>
+                  <div className="pt-2 border-t border-gray-200">
+                    <p className="text-sm text-gray-600">
+                      <span className="font-medium">Delivery Instructions:</span><br />
+                      {order.shippingAddress.instructions || 'N/A'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Payment Information */}
+          {order.paymentDetails && (
+            <div className="px-6 py-4 border-t border-gray-200">
+              <div className="flex items-center mb-4">
+                <CreditCardIcon className="h-5 w-5 text-gray-400 mr-2" />
+                <h3 className="text-lg font-medium text-gray-900">Payment Information</h3>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="flex items-center">
+                  <span className="text-lg mr-2">
+                    {getCardIcon(order.paymentDetails.card.brand)}
+                  </span>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {order.paymentDetails.card.brand.charAt(0).toUpperCase() + order.paymentDetails.card.brand.slice(1)} ending in {order.paymentDetails.card.last4}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Payment Method: {order.paymentDetails.method}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
