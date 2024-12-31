@@ -1,28 +1,28 @@
-import { Link, useLocation } from 'react-router-dom';
-import { Disclosure, Menu } from '@headlessui/react';
-import { 
+import { Link, useLocation } from "react-router-dom";
+import { Disclosure, Menu } from "@headlessui/react";
+import {
   ShoppingCartIcon,
   MenuIcon,
   XIcon,
   UserCircleIcon,
   LogoutIcon,
-  ChartBarIcon
-} from '@heroicons/react/outline';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useCart } from '../../context/CartContext';
-import { useAuth } from '../../context/AuthContext';
-import logo from '../../assets/images/logo1.svg';
+  ChartBarIcon,
+} from "@heroicons/react/outline";
+import { motion, AnimatePresence } from "framer-motion";
+import { useCart } from "../../context/CartContext";
+import { useAuth } from "../../context/AuthContext";
+import logo from "../../../src/assets/images/sparkcraft-supplies-brandbook-zip/vertical-logo.png";
 
 const navItemVariants = {
   hidden: { opacity: 0, y: -10 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     y: 0,
     transition: {
       duration: 0.2,
-      ease: "easeOut"
-    }
-  }
+      ease: "easeOut",
+    },
+  },
 };
 
 const containerVariants = {
@@ -30,21 +30,21 @@ const containerVariants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.1
-    }
-  }
+      staggerChildren: 0.1,
+    },
+  },
 };
 
 const logoVariants = {
   hidden: { opacity: 0, x: -20 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     x: 0,
     transition: {
       duration: 0.5,
-      ease: "easeOut"
-    }
-  }
+      ease: "easeOut",
+    },
+  },
 };
 
 export default function Header() {
@@ -52,24 +52,24 @@ export default function Header() {
   const { user, logout, loading } = useAuth();
   const location = useLocation();
 
-  const isAdminRoute = location.pathname.startsWith('/admin');
-  
+  const isAdminRoute = location.pathname.startsWith("/admin");
+
   // Different navigation items for admin and customer
   const customerNavigation = [
-    { name: 'Home', href: '/', current: false },
-    { name: 'Products', href: '/products', current: false },
-    { name: 'About Us', href: '/about', current: false },
-    { name: 'Services', href: '/services', current: false },
-    { name: 'Contact', href: '/contact', current: false },
+    { name: "Home", href: "/", current: false },
+    { name: "Products", href: "/products", current: false },
+    { name: "About Us", href: "/about", current: false },
+    { name: "Services", href: "/services", current: false },
+    { name: "Contact", href: "/contact", current: false },
   ];
 
   const adminNavigation = [
-    { name: 'Dashboard', href: '/admin/dashboard', current: false },
-    { name: 'Messages', href: '/admin/messages', current: false },
-    { name: 'Orders', href: '/admin/orders', current: false },
-    { name: 'Customers', href: '/admin/customers', current: false },
-    { name: 'Analytics', href: '/admin/analytics', current: false },
-    { name: 'Settings', href: '/admin/settings', current: false },
+    { name: "Dashboard", href: "/admin/dashboard", current: false },
+    { name: "Messages", href: "/admin/messages", current: false },
+    { name: "Orders", href: "/admin/orders", current: false },
+    { name: "Customers", href: "/admin/customers", current: false },
+    { name: "Analytics", href: "/admin/analytics", current: false },
+    { name: "Settings", href: "/admin/settings", current: false },
   ];
 
   const navigation = isAdminRoute ? adminNavigation : customerNavigation;
@@ -78,7 +78,7 @@ export default function Header() {
     try {
       await logout();
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error("Logout failed:", error);
     }
   };
 
@@ -87,309 +87,341 @@ export default function Header() {
 
   // Don't show header on auth pages
   if (
-    location.pathname === '/login' ||
-    location.pathname === '/signup' ||
-    location.pathname === '/forgot-password' ||
-    location.pathname === '/admin/login' ||
-    location.pathname === '/admin/signup' ||
-    location.pathname === '/admin/forgot-password'
+    location.pathname === "/login" ||
+    location.pathname === "/signup" ||
+    location.pathname === "/forgot-password" ||
+    location.pathname === "/admin/login" ||
+    location.pathname === "/admin/signup" ||
+    location.pathname === "/admin/forgot-password"
   ) {
     return null;
   }
 
   return (
     <>
-      <Disclosure as="nav" className="bg-white shadow-lg fixed w-full top-0 left-0 right-0 z-[50]">
-      {({ open }) => (
-        <>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between h-16">
-              {/* Logo and Navigation */}
-              <div className="flex items-center">
-                <motion.div 
-                  className="flex-shrink-0"
-                  initial="hidden"
-                  animate="visible"
-                  variants={logoVariants}
-                >
-                  <Link to={user?.role === 'admin' ? '/admin/dashboard' : '/'}>
-                    <img
-                      className="h-8 w-auto"
-                      src={logo}
-                      alt="Volt Electricals"
-                    />
-                  </Link>
-                </motion.div>
-                <motion.div 
-                  className="hidden sm:ml-6 sm:flex sm:space-x-8"
+      <Disclosure
+        as="nav"
+        className="bg-white shadow-lg fixed w-full top-0 left-0 right-0 z-[50]"
+      >
+        {({ open }) => (
+          <>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex justify-between h-16">
+                {/* Logo and Navigation */}
+                <div className="flex items-center">
+                  <motion.div
+                    className="flex-shrink-0"
+                    initial="hidden"
+                    animate="visible"
+                    variants={logoVariants}
+                  >
+                    <Link
+                      to={user?.role === "admin" ? "/admin/dashboard" : "/"}
+                    >
+                      <img
+                        className="h-16 w-auto"
+                        src={logo}
+                        alt="Volt Electricals"
+                        style={{ filter: "brightness(1.1) contrast(1.1)", height: "120px", width: "auto" }}
+                      />
+                    </Link>
+                  </motion.div>
+                  <motion.div
+                    className="hidden sm:ml-6 sm:flex sm:space-x-8"
+                    initial="hidden"
+                    animate="visible"
+                    variants={containerVariants}
+                  >
+                    {!isAdminRoute &&
+                      customerNavigation.map((item) => (
+                        <motion.div
+                          key={item.name}
+                          variants={navItemVariants}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <Link
+                            to={item.href}
+                            className="text-gray-900 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+                          >
+                            {item.name}
+                          </Link>
+                        </motion.div>
+                      ))}
+                    {user &&
+                      isAdminRoute &&
+                      adminNavigation.map((item) => (
+                        <motion.div
+                          key={item.name}
+                          variants={navItemVariants}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <Link
+                            to={item.href}
+                            className="text-gray-900 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+                          >
+                            {item.name}
+                          </Link>
+                        </motion.div>
+                      ))}
+                  </motion.div>
+                </div>
+
+                {/* Desktop Right Section */}
+                <motion.div
+                  className="hidden sm:flex sm:items-center"
                   initial="hidden"
                   animate="visible"
                   variants={containerVariants}
                 >
-                  {!isAdminRoute && customerNavigation.map((item) => (
-                    <motion.div
-                      key={item.name}
-                      variants={navItemVariants}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
+                  {user ? (
+                    <div className="flex items-center space-x-4">
+                      {user.role === "admin" && (
+                        <Link
+                          to="/admin/dashboard"
+                          className="flex items-center text-gray-700 hover:text-blue-600"
+                        >
+                          <ChartBarIcon className="h-6 w-6" />
+                        </Link>
+                      )}
+                      <Menu as="div" className="relative">
+                        <motion.div
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                        >
+                          <Menu.Button className="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <span className="sr-only">Open user menu</span>
+                            <UserCircleIcon className="h-8 w-8 text-gray-600" />
+                          </Menu.Button>
+                        </motion.div>
+                        <AnimatePresence>
+                          <Menu.Items className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-[100]">
+                            <motion.div
+                              className="py-1"
+                              initial={{ opacity: 0, y: -20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -20 }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              <Menu.Item>
+                                {({ active }) => (
+                                  <motion.div whileHover={{ x: 5 }}>
+                                    <Link
+                                      to={
+                                        user.role === "admin"
+                                          ? "/admin/settings"
+                                          : "/profile"
+                                      }
+                                      className={`${
+                                        active ? "bg-gray-100" : ""
+                                      } flex px-4 py-2 text-sm text-gray-700`}
+                                    >
+                                      <UserCircleIcon className="h-5 w-5 mr-2" />
+                                      {user.role === "admin"
+                                        ? "Settings"
+                                        : "Profile"}
+                                    </Link>
+                                  </motion.div>
+                                )}
+                              </Menu.Item>
+                              <Menu.Item>
+                                {({ active }) => (
+                                  <motion.div whileHover={{ x: 5 }}>
+                                    <button
+                                      onClick={handleLogout}
+                                      className={`${
+                                        active ? "bg-gray-100" : ""
+                                      } flex w-full px-4 py-2 text-sm text-gray-700`}
+                                    >
+                                      <LogoutIcon className="h-5 w-5 mr-2" />
+                                      Sign out
+                                    </button>
+                                  </motion.div>
+                                )}
+                              </Menu.Item>
+                            </motion.div>
+                          </Menu.Items>
+                        </AnimatePresence>
+                      </Menu>
+                      {user.role !== "admin" && (
+                        <motion.div
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                        >
+                          <Link
+                            to="/cart"
+                            className="p-2 text-gray-700 hover:text-blue-600 relative inline-flex items-center justify-center"
+                          >
+                            <ShoppingCartIcon className="h-6 w-6" />
+                            {items && items.length > 0 && (
+                              <motion.span
+                                className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{
+                                  type: "spring",
+                                  stiffness: 500,
+                                  damping: 30,
+                                }}
+                              >
+                                {items.length}
+                              </motion.span>
+                            )}
+                          </Link>
+                        </motion.div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-4">
                       <Link
-                      to={item.href}
-                      className="text-gray-900 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
-                    >
-                      {item.name}
-                    </Link>
-                    </motion.div>
-                  ))}
-                  {user && isAdminRoute && adminNavigation.map((item) => (
-                    <motion.div
-                      key={item.name}
-                      variants={navItemVariants}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <Link
-                        to={item.href}
+                        to="/login"
                         className="text-gray-900 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
                       >
-                        {item.name}
+                        Login
                       </Link>
-                    </motion.div>
-                  ))}
+                      <Link
+                        to="/signup"
+                        className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium"
+                      >
+                        Sign up
+                      </Link>
+                    </div>
+                  )}
+                </motion.div>
+
+                {/* Mobile menu button */}
+                <motion.div
+                  className="flex items-center sm:hidden"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <Disclosure.Button className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100">
+                    <span className="sr-only">Open main menu</span>
+                    {open ? (
+                      <XIcon className="block h-6 w-6" aria-hidden="true" />
+                    ) : (
+                      <MenuIcon className="block h-6 w-6" aria-hidden="true" />
+                    )}
+                  </Disclosure.Button>
                 </motion.div>
               </div>
+            </div>
 
-              {/* Desktop Right Section */}
-              <motion.div 
-                className="hidden sm:flex sm:items-center"
-                initial="hidden"
-                animate="visible"
-                variants={containerVariants}
-              >
-                {user ? (
-                  <div className="flex items-center space-x-4">
-                    {user.role === 'admin' && (
-                      <Link
-                        to="/admin/dashboard"
-                        className="flex items-center text-gray-700 hover:text-blue-600"
-                      >
-                        <ChartBarIcon className="h-6 w-6" />
-                      </Link>
-                    )}
-                    <Menu as="div" className="relative">
-                      <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                      <Menu.Button className="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        <span className="sr-only">Open user menu</span>
-                        <UserCircleIcon className="h-8 w-8 text-gray-600" />
-                      </Menu.Button>
-                      </motion.div>
-                      <AnimatePresence>
-                        <Menu.Items className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-[100]">
-                          <motion.div 
-                            className="py-1"
-                            initial={{ opacity: 0, y: -20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
+            {/* Mobile menu */}
+            <AnimatePresence>
+              {open && (
+                <Disclosure.Panel static className="sm:hidden">
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <div className="px-2 pt-2 pb-3 space-y-1">
+                      {!isAdminRoute &&
+                        customerNavigation.map((item) => (
+                          <motion.div
+                            key={item.name}
+                            initial={{ x: -20, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
                             transition={{ duration: 0.2 }}
                           >
-                            <Menu.Item>
-                              {({ active }) => (
-                                <motion.div whileHover={{ x: 5 }}>
-                                <Link
-                                    to={user.role === 'admin' ? '/admin/settings' : '/profile'}
-                                  className={`${
-                                    active ? 'bg-gray-100' : ''
-                                  } flex px-4 py-2 text-sm text-gray-700`}
-                                >
-                                  <UserCircleIcon className="h-5 w-5 mr-2" />
-                                    {user.role === 'admin' ? 'Settings' : 'Profile'}
-                                </Link>
-                                </motion.div>
-                              )}
-                            </Menu.Item>
-                            <Menu.Item>
-                              {({ active }) => (
-                                <motion.div whileHover={{ x: 5 }}>
-                                <button
-                                  onClick={handleLogout}
-                                  className={`${
-                                    active ? 'bg-gray-100' : ''
-                                  } flex w-full px-4 py-2 text-sm text-gray-700`}
-                                >
-                                  <LogoutIcon className="h-5 w-5 mr-2" />
-                                  Sign out
-                                </button>
-                                </motion.div>
-                              )}
-                            </Menu.Item>
-                          </motion.div>
-                        </Menu.Items>
-                      </AnimatePresence>
-                    </Menu>
-                    {user.role !== 'admin' && (
-                      <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                    <Link
-                      to="/cart"
-                          className="p-2 text-gray-700 hover:text-blue-600 relative inline-flex items-center justify-center"
-                    >
-                      <ShoppingCartIcon className="h-6 w-6" />
-                      {items && items.length > 0 && (
-                            <motion.span 
-                              className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
-                              initial={{ scale: 0 }}
-                              animate={{ scale: 1 }}
-                              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                            <Disclosure.Button
+                              as={Link}
+                              to={item.href}
+                              className="text-gray-900 hover:bg-gray-50 block px-3 py-2 rounded-md text-base font-medium"
                             >
-                          {items.length}
-                            </motion.span>
-                      )}
-                    </Link>
-                      </motion.div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex items-center space-x-4">
-                    <Link
-                      to="/login"
-                      className="text-gray-900 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
-                    >
-                      Login
-                    </Link>
-                    <Link
-                      to="/signup"
-                      className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium"
-                    >
-                      Sign up
-                    </Link>
-                  </div>
-                )}
-              </motion.div>
-
-              {/* Mobile menu button */}
-              <motion.div 
-                className="flex items-center sm:hidden"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                <Disclosure.Button className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100">
-                  <span className="sr-only">Open main menu</span>
-                  {open ? (
-                    <XIcon className="block h-6 w-6" aria-hidden="true" />
-                  ) : (
-                    <MenuIcon className="block h-6 w-6" aria-hidden="true" />
-                  )}
-                </Disclosure.Button>
-              </motion.div>
-            </div>
-          </div>
-
-          {/* Mobile menu */}
-          <AnimatePresence>
-            {open && (
-              <Disclosure.Panel static className="sm:hidden">
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-            <div className="px-2 pt-2 pb-3 space-y-1">
-                    {!isAdminRoute && customerNavigation.map((item) => (
+                              {item.name}
+                            </Disclosure.Button>
+                          </motion.div>
+                        ))}
+                      {user &&
+                        isAdminRoute &&
+                        adminNavigation.map((item) => (
+                          <motion.div
+                            key={item.name}
+                            initial={{ x: -20, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <Disclosure.Button
+                              as={Link}
+                              to={item.href}
+                              className="text-gray-900 hover:bg-gray-50 block px-3 py-2 rounded-md text-base font-medium"
+                            >
+                              {item.name}
+                            </Disclosure.Button>
+                          </motion.div>
+                        ))}
+                    </div>
+                    {/* Mobile menu authentication */}
+                    <div className="pt-4 pb-3 border-t border-gray-200">
                       <motion.div
-                        key={item.name}
-                        initial={{ x: -20, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        transition={{ duration: 0.2 }}
+                        className="px-2 space-y-1"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.2 }}
                       >
-                <Disclosure.Button
-                          as={Link}
-                          to={item.href}
-                          className="text-gray-900 hover:bg-gray-50 block px-3 py-2 rounded-md text-base font-medium"
-                        >
-                          {item.name}
-                        </Disclosure.Button>
+                        {user ? (
+                          <>
+                            <Disclosure.Button
+                              as={Link}
+                              to={
+                                user.role === "admin"
+                                  ? "/admin/settings"
+                                  : "/profile"
+                              }
+                              className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
+                            >
+                              {user.role === "admin" ? "Settings" : "Profile"}
+                            </Disclosure.Button>
+                            {user.role !== "admin" && (
+                              <Disclosure.Button
+                                as={Link}
+                                to="/cart"
+                                className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
+                              >
+                                Cart {items.length > 0 && `(${items.length})`}
+                              </Disclosure.Button>
+                            )}
+                            <Disclosure.Button
+                              as="button"
+                              onClick={handleLogout}
+                              className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
+                            >
+                              Sign out
+                            </Disclosure.Button>
+                          </>
+                        ) : (
+                          <>
+                            <Disclosure.Button
+                              as={Link}
+                              to="/login"
+                              className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
+                            >
+                              Login
+                            </Disclosure.Button>
+                            <Disclosure.Button
+                              as={Link}
+                              to="/signup"
+                              className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
+                            >
+                              Sign up
+                            </Disclosure.Button>
+                          </>
+                        )}
                       </motion.div>
-                    ))}
-                    {user && isAdminRoute && adminNavigation.map((item) => (
-                      <motion.div
-                  key={item.name}
-                        initial={{ x: -20, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <Disclosure.Button
-                  as={Link}
-                  to={item.href}
-                  className="text-gray-900 hover:bg-gray-50 block px-3 py-2 rounded-md text-base font-medium"
-                >
-                  {item.name}
-                </Disclosure.Button>
-                      </motion.div>
-              ))}
-            </div>
-            {/* Mobile menu authentication */}
-            <div className="pt-4 pb-3 border-t border-gray-200">
-                    <motion.div 
-                      className="px-2 space-y-1"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.2 }}
-                    >
-              {user ? (
-                        <>
-                  <Disclosure.Button
-                    as={Link}
-                            to={user.role === 'admin' ? '/admin/settings' : '/profile'}
-                    className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
-                  >
-                            {user.role === 'admin' ? 'Settings' : 'Profile'}
-                  </Disclosure.Button>
-                          {user.role !== 'admin' && (
-                  <Disclosure.Button
-                    as={Link}
-                    to="/cart"
-                    className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
-                  >
-                    Cart {items.length > 0 && `(${items.length})`}
-                  </Disclosure.Button>
-                          )}
-                  <Disclosure.Button
-                    as="button"
-                    onClick={handleLogout}
-                    className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
-                  >
-                    Sign out
-                  </Disclosure.Button>
-                        </>
-              ) : (
-                        <>
-                  <Disclosure.Button
-                    as={Link}
-                    to="/login"
-                    className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
-                  >
-                            Login
-                  </Disclosure.Button>
-                  <Disclosure.Button
-                    as={Link}
-                    to="/signup"
-                    className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
-                  >
-                    Sign up
-                  </Disclosure.Button>
-                        </>
+                    </div>
+                  </motion.div>
+                </Disclosure.Panel>
               )}
-                    </motion.div>
-            </div>
-                </motion.div>
-          </Disclosure.Panel>
-            )}
-          </AnimatePresence>
-        </>
-      )}
-    </Disclosure>
+            </AnimatePresence>
+          </>
+        )}
+      </Disclosure>
       {/* Add padding to prevent content from hiding behind fixed header */}
       <div className="h-16"></div>
     </>
   );
-} 
+}
