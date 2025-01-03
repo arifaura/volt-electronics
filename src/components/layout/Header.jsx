@@ -7,7 +7,6 @@ import {
   UserCircleIcon,
   LogoutIcon,
   ChartBarIcon,
-<<<<<<< HEAD
   SunIcon,
   MoonIcon
 } from '@heroicons/react/outline';
@@ -16,13 +15,6 @@ import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import logo from '../../assets/images/logo1.svg';
-=======
-} from "@heroicons/react/outline";
-import { motion, AnimatePresence } from "framer-motion";
-import { useCart } from "../../context/CartContext";
-import { useAuth } from "../../context/AuthContext";
-import logo from "../../../src/assets/images/sparkcraft-supplies-brandbook-zip/vertical-logo.png";
->>>>>>> 3ae3fa52e29882b6f88f53b1d3050a9ea15411d0
 
 const navItemVariants = {
   hidden: { opacity: 0, y: -10 },
@@ -111,7 +103,6 @@ export default function Header() {
 
   return (
     <>
-<<<<<<< HEAD
       <Disclosure as="nav" className="bg-card-bg border-b border-border shadow-lg fixed w-full top-0 left-0 right-0 z-[50]">
       {({ open }) => (
         <>
@@ -135,277 +126,82 @@ export default function Header() {
                 </motion.div>
                 <motion.div 
                   className="hidden sm:ml-6 sm:flex sm:space-x-8"
-=======
-      <Disclosure
-        as="nav"
-        className="bg-white shadow-lg fixed w-full top-0 left-0 right-0 z-[50]"
-      >
-        {({ open }) => (
-          <>
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex justify-between h-16">
-                {/* Logo and Navigation */}
-                <div className="flex items-center">
-                  <motion.div
-                    className="flex-shrink-0"
-                    initial="hidden"
-                    animate="visible"
-                    variants={logoVariants}
-                  >
-                    <Link
-                      to={user?.role === "admin" ? "/admin/dashboard" : "/"}
-                    >
-                      <img
-                        className="h-16 w-auto"
-                        src={logo}
-                        alt="Volt Electricals"
-                        style={{ filter: "brightness(1.1) contrast(1.1)", height: "120px", width: "auto" }}
-                      />
-                    </Link>
-                  </motion.div>
-                  <motion.div
-                    className="hidden sm:ml-6 sm:flex sm:space-x-8"
-                    initial="hidden"
-                    animate="visible"
-                    variants={containerVariants}
-                  >
-                    {!isAdminRoute &&
-                      customerNavigation.map((item) => (
-                        <motion.div
-                          key={item.name}
-                          variants={navItemVariants}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <Link
-                            to={item.href}
-                            className="text-gray-900 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
-                          >
-                            {item.name}
-                          </Link>
-                        </motion.div>
-                      ))}
-                    {user &&
-                      isAdminRoute &&
-                      adminNavigation.map((item) => (
-                        <motion.div
-                          key={item.name}
-                          variants={navItemVariants}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <Link
-                            to={item.href}
-                            className="text-gray-900 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
-                          >
-                            {item.name}
-                          </Link>
-                        </motion.div>
-                      ))}
-                  </motion.div>
-                </div>
-
-                {/* Desktop Right Section */}
-                <motion.div
-                  className="hidden sm:flex sm:items-center"
->>>>>>> 3ae3fa52e29882b6f88f53b1d3050a9ea15411d0
                   initial="hidden"
                   animate="visible"
                   variants={containerVariants}
                 >
-                  {user ? (
-                    <div className="flex items-center space-x-4">
-                      {user.role === "admin" && (
+                    {!isAdminRoute && customerNavigation.map((item) => (
+                      <motion.div
+                        key={item.name}
+                        variants={navItemVariants}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
                         <Link
-                          to="/admin/dashboard"
-                          className="flex items-center text-gray-700 hover:text-blue-600"
+                          to={item.href}
+                          className="text-text-primary hover:text-accent px-3 py-2 rounded-md text-sm font-medium"
                         >
-                          <ChartBarIcon className="h-6 w-6" />
+                          {item.name}
                         </Link>
-                      )}
-                      <Menu as="div" className="relative">
-                        <motion.div
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
+                      </motion.div>
+                    ))}
+                    {user && isAdminRoute && adminNavigation.map((item) => (
+                      <motion.div
+                        key={item.name}
+                        variants={navItemVariants}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Link
+                          to={item.href}
+                          className="text-text-primary hover:text-accent px-3 py-2 rounded-md text-sm font-medium"
                         >
-                          <Menu.Button className="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                            <span className="sr-only">Open user menu</span>
-                            <UserCircleIcon className="h-8 w-8 text-gray-600" />
-                          </Menu.Button>
-                        </motion.div>
-                        <AnimatePresence>
-                          <Menu.Items className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-[100]">
-                            <motion.div
-                              className="py-1"
-                              initial={{ opacity: 0, y: -20 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -20 }}
-                              transition={{ duration: 0.2 }}
-                            >
-                              <Menu.Item>
-                                {({ active }) => (
-                                  <motion.div whileHover={{ x: 5 }}>
-                                    <Link
-                                      to={
-                                        user.role === "admin"
-                                          ? "/admin/settings"
-                                          : "/profile"
-                                      }
-                                      className={`${
-                                        active ? "bg-gray-100" : ""
-                                      } flex px-4 py-2 text-sm text-gray-700`}
-                                    >
-                                      <UserCircleIcon className="h-5 w-5 mr-2" />
-                                      {user.role === "admin"
-                                        ? "Settings"
-                                        : "Profile"}
-                                    </Link>
-                                  </motion.div>
-                                )}
-                              </Menu.Item>
-                              <Menu.Item>
-                                {({ active }) => (
-                                  <motion.div whileHover={{ x: 5 }}>
-                                    <button
-                                      onClick={handleLogout}
-                                      className={`${
-                                        active ? "bg-gray-100" : ""
-                                      } flex w-full px-4 py-2 text-sm text-gray-700`}
-                                    >
-                                      <LogoutIcon className="h-5 w-5 mr-2" />
-                                      Sign out
-                                    </button>
-                                  </motion.div>
-                                )}
-                              </Menu.Item>
-                            </motion.div>
-                          </Menu.Items>
-                        </AnimatePresence>
-                      </Menu>
-                      {user.role !== "admin" && (
-                        <motion.div
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                        >
-                          <Link
-                            to="/cart"
-                            className="p-2 text-gray-700 hover:text-blue-600 relative inline-flex items-center justify-center"
-                          >
-                            <ShoppingCartIcon className="h-6 w-6" />
-                            {items && items.length > 0 && (
-                              <motion.span
-                                className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                transition={{
-                                  type: "spring",
-                                  stiffness: 500,
-                                  damping: 30,
-                                }}
-                              >
-                                {items.length}
-                              </motion.span>
-                            )}
-                          </Link>
-                        </motion.div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-4">
-                      <Link
-<<<<<<< HEAD
-                        to={item.href}
-                        className="text-text-primary hover:text-accent px-3 py-2 rounded-md text-sm font-medium"
-                      >
-                        {item.name}
-                      </Link>
-                    </motion.div>
-                  ))}
-                  {user && isAdminRoute && adminNavigation.map((item) => (
-                    <motion.div
-                      key={item.name}
-                      variants={navItemVariants}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <Link
-                        to={item.href}
-                        className="text-text-primary hover:text-accent px-3 py-2 rounded-md text-sm font-medium"
-=======
-                        to="/login"
-                        className="text-gray-900 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
->>>>>>> 3ae3fa52e29882b6f88f53b1d3050a9ea15411d0
-                      >
-                        Login
-                      </Link>
-                      <Link
-                        to="/signup"
-                        className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium"
-                      >
-                        Sign up
-                      </Link>
-                    </div>
-                  )}
-                </motion.div>
-
-                {/* Mobile menu button */}
-                <motion.div
-                  className="flex items-center sm:hidden"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  <Disclosure.Button className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100">
-                    <span className="sr-only">Open main menu</span>
-                    {open ? (
-                      <XIcon className="block h-6 w-6" aria-hidden="true" />
-                    ) : (
-                      <MenuIcon className="block h-6 w-6" aria-hidden="true" />
-                    )}
-                  </Disclosure.Button>
+                          {item.name}
+                        </Link>
+                      </motion.div>
+                    ))}
                 </motion.div>
               </div>
-            </div>
 
-<<<<<<< HEAD
               {/* Desktop Right Section */}
-              <motion.div 
-                className="hidden sm:flex sm:items-center sm:space-x-4"
+              <motion.div
+                  className="hidden sm:flex sm:items-center sm:space-x-4"
                 initial="hidden"
                 animate="visible"
                 variants={containerVariants}
               >
-                {/* Theme Toggle Button */}
-                <button
-                  onClick={toggleTheme}
-                  className="p-2 rounded-md text-text-primary hover:text-accent focus:outline-none"
-                >
-                  {theme === 'dark' ? (
-                    <SunIcon className="h-6 w-6" aria-hidden="true" />
-                  ) : (
-                    <MoonIcon className="h-6 w-6" aria-hidden="true" />
-                  )}
-                </button>
+                  {/* Theme Toggle Button */}
+                  <button
+                    onClick={toggleTheme}
+                    className="p-2 rounded-md text-text-primary hover:text-accent focus:outline-none"
+                  >
+                    {theme === 'dark' ? (
+                      <SunIcon className="h-6 w-6" aria-hidden="true" />
+                    ) : (
+                      <MoonIcon className="h-6 w-6" aria-hidden="true" />
+                    )}
+                  </button>
 
                 {user ? (
                   <div className="flex items-center space-x-4">
-                    {user.role === 'admin' && (
+                      {user.role === 'admin' && (
                       <Link
                         to="/admin/dashboard"
-                        className="flex items-center text-text-primary hover:text-accent"
+                          className="flex items-center text-text-primary hover:text-accent"
                       >
                         <ChartBarIcon className="h-6 w-6" />
                       </Link>
                     )}
                     <Menu as="div" className="relative">
-                      <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                        <Menu.Button className="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent">
+                        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                          <Menu.Button className="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent">
                           <span className="sr-only">Open user menu</span>
-                          <UserCircleIcon className="h-8 w-8 text-text-primary" />
+                            <UserCircleIcon className="h-8 w-8 text-text-primary" />
                         </Menu.Button>
                       </motion.div>
                       <AnimatePresence>
-                        <Menu.Items className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-card-bg ring-1 ring-black ring-opacity-5 focus:outline-none z-[100]">
-                          <motion.div 
+                          <Menu.Items className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-card-bg ring-1 ring-black ring-opacity-5 focus:outline-none z-[100]">
+                          <motion.div
                             className="py-1"
                             initial={{ opacity: 0, y: -20 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -416,13 +212,13 @@ export default function Header() {
                               {({ active }) => (
                                 <motion.div whileHover={{ x: 5 }}>
                                   <Link
-                                    to={user.role === 'admin' ? '/admin/settings' : '/profile'}
+                                      to={user.role === 'admin' ? '/admin/settings' : '/profile'}
                                     className={`${
-                                      active ? 'bg-background' : ''
-                                    } flex px-4 py-2 text-sm text-text-primary`}
+                                        active ? 'bg-background' : ''
+                                      } flex px-4 py-2 text-sm text-text-primary`}
                                   >
                                     <UserCircleIcon className="h-5 w-5 mr-2" />
-                                    {user.role === 'admin' ? 'Settings' : 'Profile'}
+                                      {user.role === 'admin' ? 'Settings' : 'Profile'}
                                   </Link>
                                 </motion.div>
                               )}
@@ -433,8 +229,8 @@ export default function Header() {
                                   <button
                                     onClick={handleLogout}
                                     className={`${
-                                      active ? 'bg-background' : ''
-                                    } flex w-full px-4 py-2 text-sm text-text-primary`}
+                                        active ? 'bg-background' : ''
+                                      } flex w-full px-4 py-2 text-sm text-text-primary`}
                                   >
                                     <LogoutIcon className="h-5 w-5 mr-2" />
                                     Sign out
@@ -446,19 +242,19 @@ export default function Header() {
                         </Menu.Items>
                       </AnimatePresence>
                     </Menu>
-                    {user.role !== 'admin' && (
-                      <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                      {user.role !== 'admin' && (
+                        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                         <Link
                           to="/cart"
-                          className="p-2 text-text-primary hover:text-accent relative inline-flex items-center justify-center"
+                            className="p-2 text-text-primary hover:text-accent relative inline-flex items-center justify-center"
                         >
                           <ShoppingCartIcon className="h-6 w-6" />
                           {items && items.length > 0 && (
-                            <motion.span 
-                              className="absolute -top-2 -right-2 bg-accent text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
+                            <motion.span
+                                className="absolute -top-2 -right-2 bg-accent text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
-                              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                transition={{ type: "spring", stiffness: 500, damping: 30 }}
                             >
                               {items.length}
                             </motion.span>
@@ -471,13 +267,13 @@ export default function Header() {
                   <div className="flex items-center space-x-4">
                     <Link
                       to="/login"
-                      className="text-text-primary hover:text-accent px-3 py-2 rounded-md text-sm font-medium"
+                        className="text-text-primary hover:text-accent px-3 py-2 rounded-md text-sm font-medium"
                     >
                       Login
                     </Link>
                     <Link
                       to="/signup"
-                      className="bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-md text-sm font-medium"
+                        className="bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-md text-sm font-medium"
                     >
                       Sign up
                     </Link>
@@ -486,12 +282,12 @@ export default function Header() {
               </motion.div>
 
               {/* Mobile menu button */}
-              <motion.div 
+              <motion.div
                 className="flex items-center sm:hidden"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
-                <Disclosure.Button className="inline-flex items-center justify-center p-2 rounded-md text-text-primary hover:text-accent hover:bg-background">
+                  <Disclosure.Button className="inline-flex items-center justify-center p-2 rounded-md text-text-primary hover:text-accent hover:bg-background">
                   <span className="sr-only">Open main menu</span>
                   {open ? (
                     <XIcon className="block h-6 w-6" aria-hidden="true" />
@@ -534,74 +330,6 @@ export default function Header() {
                     </button>
 
                     {!isAdminRoute && customerNavigation.map((item) => (
-=======
-            {/* Mobile menu */}
-            <AnimatePresence>
-              {open && (
-                <Disclosure.Panel static className="sm:hidden">
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <div className="px-2 pt-2 pb-3 space-y-1">
-                      {!isAdminRoute &&
-                        customerNavigation.map((item) => (
-                          <motion.div
-                            key={item.name}
-                            initial={{ x: -20, opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            <Disclosure.Button
-                              as={Link}
-                              to={item.href}
-                              className="text-gray-900 hover:bg-gray-50 block px-3 py-2 rounded-md text-base font-medium"
-                            >
-                              {item.name}
-                            </Disclosure.Button>
-                          </motion.div>
-                        ))}
-                      {user &&
-                        isAdminRoute &&
-                        adminNavigation.map((item) => (
-                          <motion.div
-                            key={item.name}
-                            initial={{ x: -20, opacity: 0 }}
-                            animate={{ x: 0, opacity: 1 }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            <Disclosure.Button
-                              as={Link}
-                              to={item.href}
-                              className="text-gray-900 hover:bg-gray-50 block px-3 py-2 rounded-md text-base font-medium"
-                            >
-                              {item.name}
-                            </Disclosure.Button>
-                          </motion.div>
-                        ))}
-                    </div>
-                    {/* Mobile menu authentication */}
-                    <div className="pt-4 pb-3 border-t border-gray-200">
->>>>>>> 3ae3fa52e29882b6f88f53b1d3050a9ea15411d0
-                      <motion.div
-                        className="px-2 space-y-1"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.2 }}
-                      >
-<<<<<<< HEAD
-                        <Disclosure.Button
-                          as={Link}
-                          to={item.href}
-                          className="text-text-primary hover:text-accent hover:bg-background block px-3 py-2 rounded-md text-base font-medium"
-                        >
-                          {item.name}
-                        </Disclosure.Button>
-                      </motion.div>
-                    ))}
-                    {user && isAdminRoute && adminNavigation.map((item) => (
                       <motion.div
                         key={item.name}
                         initial={{ x: -20, opacity: 0 }}
@@ -611,15 +339,31 @@ export default function Header() {
                         <Disclosure.Button
                           as={Link}
                           to={item.href}
-                          className="text-text-primary hover:text-accent hover:bg-background block px-3 py-2 rounded-md text-base font-medium"
+                            className="text-text-primary hover:text-accent hover:bg-background block px-3 py-2 rounded-md text-base font-medium"
                         >
                           {item.name}
                         </Disclosure.Button>
                       </motion.div>
                     ))}
+                      {user && isAdminRoute && adminNavigation.map((item) => (
+                        <motion.div
+                          key={item.name}
+                          initial={{ x: -20, opacity: 0 }}
+                          animate={{ x: 0, opacity: 1 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <Disclosure.Button
+                            as={Link}
+                            to={item.href}
+                            className="text-text-primary hover:text-accent hover:bg-background block px-3 py-2 rounded-md text-base font-medium"
+                          >
+                            {item.name}
+                          </Disclosure.Button>
+                        </motion.div>
+                      ))}
                   </div>
                   {/* Mobile menu authentication */}
-                  <div className="pt-4 pb-3 border-t border-border">
+                    <div className="pt-4 pb-3 border-t border-border">
                     <motion.div 
                       className="px-2 space-y-1"
                       initial={{ opacity: 0 }}
@@ -679,65 +423,6 @@ export default function Header() {
         </>
       )}
     </Disclosure>
-=======
-                        {user ? (
-                          <>
-                            <Disclosure.Button
-                              as={Link}
-                              to={
-                                user.role === "admin"
-                                  ? "/admin/settings"
-                                  : "/profile"
-                              }
-                              className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
-                            >
-                              {user.role === "admin" ? "Settings" : "Profile"}
-                            </Disclosure.Button>
-                            {user.role !== "admin" && (
-                              <Disclosure.Button
-                                as={Link}
-                                to="/cart"
-                                className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
-                              >
-                                Cart {items.length > 0 && `(${items.length})`}
-                              </Disclosure.Button>
-                            )}
-                            <Disclosure.Button
-                              as="button"
-                              onClick={handleLogout}
-                              className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
-                            >
-                              Sign out
-                            </Disclosure.Button>
-                          </>
-                        ) : (
-                          <>
-                            <Disclosure.Button
-                              as={Link}
-                              to="/login"
-                              className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
-                            >
-                              Login
-                            </Disclosure.Button>
-                            <Disclosure.Button
-                              as={Link}
-                              to="/signup"
-                              className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
-                            >
-                              Sign up
-                            </Disclosure.Button>
-                          </>
-                        )}
-                      </motion.div>
-                    </div>
-                  </motion.div>
-                </Disclosure.Panel>
-              )}
-            </AnimatePresence>
-          </>
-        )}
-      </Disclosure>
->>>>>>> 3ae3fa52e29882b6f88f53b1d3050a9ea15411d0
       {/* Add padding to prevent content from hiding behind fixed header */}
       <div className="h-16"></div>
     </>
