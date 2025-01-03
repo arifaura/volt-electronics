@@ -8,13 +8,16 @@ import {
   LogoutIcon,
   ChartBarIcon,
   SunIcon,
-  MoonIcon
+  MoonIcon,
+  HeartIcon,
+  UserIcon
 } from '@heroicons/react/outline';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import logo from '../../assets/images/logo1.svg';
+import { useWishlist } from '../../context/WishlistContext';
 
 const navItemVariants = {
   hidden: { opacity: 0, y: -10 },
@@ -55,6 +58,7 @@ export default function Header() {
   const { user, logout, loading } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
+  const { wishlist } = useWishlist();
 
   const isAdminRoute = location.pathname.startsWith("/admin");
 
@@ -243,25 +247,45 @@ export default function Header() {
                       </AnimatePresence>
                     </Menu>
                       {user.role !== 'admin' && (
-                        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                        <Link
-                          to="/cart"
-                            className="p-2 text-text-primary hover:text-accent relative inline-flex items-center justify-center"
-                        >
-                          <ShoppingCartIcon className="h-6 w-6" />
-                          {items && items.length > 0 && (
-                            <motion.span
-                                className="absolute -top-2 -right-2 bg-accent text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
-                              initial={{ scale: 0 }}
-                              animate={{ scale: 1 }}
-                                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                        <>
+                          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                            <Link
+                              to="/wishlist"
+                              className="p-2 text-text-primary hover:text-accent relative inline-flex items-center justify-center"
                             >
-                              {items.length}
-                            </motion.span>
-                          )}
-                        </Link>
-                      </motion.div>
-                    )}
+                              <HeartIcon className="h-6 w-6" />
+                              {wishlist && wishlist.length > 0 && (
+                                <motion.span
+                                  className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                >
+                                  {wishlist.length}
+                                </motion.span>
+                              )}
+                            </Link>
+                          </motion.div>
+                          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                            <Link
+                              to="/cart"
+                                className="p-2 text-text-primary hover:text-accent relative inline-flex items-center justify-center"
+                            >
+                              <ShoppingCartIcon className="h-6 w-6" />
+                              {items && items.length > 0 && (
+                                <motion.span
+                                    className="absolute -top-2 -right-2 bg-accent text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                >
+                                  {items.length}
+                                </motion.span>
+                              )}
+                            </Link>
+                          </motion.div>
+                        </>
+                      )}
                   </div>
                 ) : (
                   <div className="flex items-center space-x-4">
@@ -380,6 +404,14 @@ export default function Header() {
                             {user.role === 'admin' ? 'Settings' : 'Profile'}
                           </Disclosure.Button>
                           {user.role !== 'admin' && (
+                            <>
+                              <Disclosure.Button
+                                as={Link}
+                                to="/wishlist"
+                                className="block px-3 py-2 rounded-md text-base font-medium text-text-primary hover:text-accent hover:bg-background"
+                              >
+                                Wishlist {wishlist.length > 0 && `(${wishlist.length})`}
+                              </Disclosure.Button>
                             <Disclosure.Button
                               as={Link}
                               to="/cart"
@@ -387,6 +419,7 @@ export default function Header() {
                             >
                               Cart {items.length > 0 && `(${items.length})`}
                             </Disclosure.Button>
+                            </>
                           )}
                           <Disclosure.Button
                             as="button"
