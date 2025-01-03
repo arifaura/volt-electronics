@@ -6,11 +6,14 @@ import {
   XIcon,
   UserCircleIcon,
   LogoutIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  SunIcon,
+  MoonIcon
 } from '@heroicons/react/outline';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import logo from '../../assets/images/logo1.svg';
 
 const navItemVariants = {
@@ -50,6 +53,7 @@ const logoVariants = {
 export default function Header() {
   const { items = [] } = useCart();
   const { user, logout, loading } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
 
   const isAdminRoute = location.pathname.startsWith('/admin');
@@ -99,7 +103,7 @@ export default function Header() {
 
   return (
     <>
-      <Disclosure as="nav" className="bg-white shadow-lg fixed w-full top-0 left-0 right-0 z-[50]">
+      <Disclosure as="nav" className="bg-card-bg border-b border-border shadow-lg fixed w-full top-0 left-0 right-0 z-[50]">
       {({ open }) => (
         <>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -134,11 +138,11 @@ export default function Header() {
                       whileTap={{ scale: 0.95 }}
                     >
                       <Link
-                      to={item.href}
-                      className="text-gray-900 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
-                    >
-                      {item.name}
-                    </Link>
+                        to={item.href}
+                        className="text-text-primary hover:text-accent px-3 py-2 rounded-md text-sm font-medium"
+                      >
+                        {item.name}
+                      </Link>
                     </motion.div>
                   ))}
                   {user && isAdminRoute && adminNavigation.map((item) => (
@@ -150,7 +154,7 @@ export default function Header() {
                     >
                       <Link
                         to={item.href}
-                        className="text-gray-900 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+                        className="text-text-primary hover:text-accent px-3 py-2 rounded-md text-sm font-medium"
                       >
                         {item.name}
                       </Link>
@@ -161,30 +165,42 @@ export default function Header() {
 
               {/* Desktop Right Section */}
               <motion.div 
-                className="hidden sm:flex sm:items-center"
+                className="hidden sm:flex sm:items-center sm:space-x-4"
                 initial="hidden"
                 animate="visible"
                 variants={containerVariants}
               >
+                {/* Theme Toggle Button */}
+                <button
+                  onClick={toggleTheme}
+                  className="p-2 rounded-md text-text-primary hover:text-accent focus:outline-none"
+                >
+                  {theme === 'dark' ? (
+                    <SunIcon className="h-6 w-6" aria-hidden="true" />
+                  ) : (
+                    <MoonIcon className="h-6 w-6" aria-hidden="true" />
+                  )}
+                </button>
+
                 {user ? (
                   <div className="flex items-center space-x-4">
                     {user.role === 'admin' && (
                       <Link
                         to="/admin/dashboard"
-                        className="flex items-center text-gray-700 hover:text-blue-600"
+                        className="flex items-center text-text-primary hover:text-accent"
                       >
                         <ChartBarIcon className="h-6 w-6" />
                       </Link>
                     )}
                     <Menu as="div" className="relative">
                       <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                      <Menu.Button className="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        <span className="sr-only">Open user menu</span>
-                        <UserCircleIcon className="h-8 w-8 text-gray-600" />
-                      </Menu.Button>
+                        <Menu.Button className="flex text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent">
+                          <span className="sr-only">Open user menu</span>
+                          <UserCircleIcon className="h-8 w-8 text-text-primary" />
+                        </Menu.Button>
                       </motion.div>
                       <AnimatePresence>
-                        <Menu.Items className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-[100]">
+                        <Menu.Items className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-card-bg ring-1 ring-black ring-opacity-5 focus:outline-none z-[100]">
                           <motion.div 
                             className="py-1"
                             initial={{ opacity: 0, y: -20 }}
@@ -195,30 +211,30 @@ export default function Header() {
                             <Menu.Item>
                               {({ active }) => (
                                 <motion.div whileHover={{ x: 5 }}>
-                                <Link
+                                  <Link
                                     to={user.role === 'admin' ? '/admin/settings' : '/profile'}
-                                  className={`${
-                                    active ? 'bg-gray-100' : ''
-                                  } flex px-4 py-2 text-sm text-gray-700`}
-                                >
-                                  <UserCircleIcon className="h-5 w-5 mr-2" />
+                                    className={`${
+                                      active ? 'bg-background' : ''
+                                    } flex px-4 py-2 text-sm text-text-primary`}
+                                  >
+                                    <UserCircleIcon className="h-5 w-5 mr-2" />
                                     {user.role === 'admin' ? 'Settings' : 'Profile'}
-                                </Link>
+                                  </Link>
                                 </motion.div>
                               )}
                             </Menu.Item>
                             <Menu.Item>
                               {({ active }) => (
                                 <motion.div whileHover={{ x: 5 }}>
-                                <button
-                                  onClick={handleLogout}
-                                  className={`${
-                                    active ? 'bg-gray-100' : ''
-                                  } flex w-full px-4 py-2 text-sm text-gray-700`}
-                                >
-                                  <LogoutIcon className="h-5 w-5 mr-2" />
-                                  Sign out
-                                </button>
+                                  <button
+                                    onClick={handleLogout}
+                                    className={`${
+                                      active ? 'bg-background' : ''
+                                    } flex w-full px-4 py-2 text-sm text-text-primary`}
+                                  >
+                                    <LogoutIcon className="h-5 w-5 mr-2" />
+                                    Sign out
+                                  </button>
                                 </motion.div>
                               )}
                             </Menu.Item>
@@ -228,22 +244,22 @@ export default function Header() {
                     </Menu>
                     {user.role !== 'admin' && (
                       <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                    <Link
-                      to="/cart"
-                          className="p-2 text-gray-700 hover:text-blue-600 relative inline-flex items-center justify-center"
-                    >
-                      <ShoppingCartIcon className="h-6 w-6" />
-                      {items && items.length > 0 && (
+                        <Link
+                          to="/cart"
+                          className="p-2 text-text-primary hover:text-accent relative inline-flex items-center justify-center"
+                        >
+                          <ShoppingCartIcon className="h-6 w-6" />
+                          {items && items.length > 0 && (
                             <motion.span 
-                              className="absolute -top-2 -right-2 bg-blue-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
+                              className="absolute -top-2 -right-2 bg-accent text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
                               transition={{ type: "spring", stiffness: 500, damping: 30 }}
                             >
-                          {items.length}
+                              {items.length}
                             </motion.span>
-                      )}
-                    </Link>
+                          )}
+                        </Link>
                       </motion.div>
                     )}
                   </div>
@@ -251,13 +267,13 @@ export default function Header() {
                   <div className="flex items-center space-x-4">
                     <Link
                       to="/login"
-                      className="text-gray-900 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+                      className="text-text-primary hover:text-accent px-3 py-2 rounded-md text-sm font-medium"
                     >
                       Login
                     </Link>
                     <Link
                       to="/signup"
-                      className="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium"
+                      className="bg-accent hover:bg-accent-hover text-white px-4 py-2 rounded-md text-sm font-medium"
                     >
                       Sign up
                     </Link>
@@ -271,7 +287,7 @@ export default function Header() {
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
-                <Disclosure.Button className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100">
+                <Disclosure.Button className="inline-flex items-center justify-center p-2 rounded-md text-text-primary hover:text-accent hover:bg-background">
                   <span className="sr-only">Open main menu</span>
                   {open ? (
                     <XIcon className="block h-6 w-6" aria-hidden="true" />
@@ -292,8 +308,27 @@ export default function Header() {
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
                   transition={{ duration: 0.2 }}
+                  className="bg-card-bg"
                 >
-            <div className="px-2 pt-2 pb-3 space-y-1">
+                  <div className="px-2 pt-2 pb-3 space-y-1">
+                    {/* Theme toggle in mobile menu */}
+                    <button
+                      onClick={toggleTheme}
+                      className="w-full flex items-center px-3 py-2 rounded-md text-text-primary hover:text-accent hover:bg-background"
+                    >
+                      {theme === 'dark' ? (
+                        <>
+                          <SunIcon className="h-6 w-6 mr-2" />
+                          Light Mode
+                        </>
+                      ) : (
+                        <>
+                          <MoonIcon className="h-6 w-6 mr-2" />
+                          Dark Mode
+                        </>
+                      )}
+                    </button>
+
                     {!isAdminRoute && customerNavigation.map((item) => (
                       <motion.div
                         key={item.name}
@@ -301,10 +336,10 @@ export default function Header() {
                         animate={{ x: 0, opacity: 1 }}
                         transition={{ duration: 0.2 }}
                       >
-                <Disclosure.Button
+                        <Disclosure.Button
                           as={Link}
                           to={item.href}
-                          className="text-gray-900 hover:bg-gray-50 block px-3 py-2 rounded-md text-base font-medium"
+                          className="text-text-primary hover:text-accent hover:bg-background block px-3 py-2 rounded-md text-base font-medium"
                         >
                           {item.name}
                         </Disclosure.Button>
@@ -312,77 +347,77 @@ export default function Header() {
                     ))}
                     {user && isAdminRoute && adminNavigation.map((item) => (
                       <motion.div
-                  key={item.name}
+                        key={item.name}
                         initial={{ x: -20, opacity: 0 }}
                         animate={{ x: 0, opacity: 1 }}
                         transition={{ duration: 0.2 }}
                       >
                         <Disclosure.Button
-                  as={Link}
-                  to={item.href}
-                  className="text-gray-900 hover:bg-gray-50 block px-3 py-2 rounded-md text-base font-medium"
-                >
-                  {item.name}
-                </Disclosure.Button>
+                          as={Link}
+                          to={item.href}
+                          className="text-text-primary hover:text-accent hover:bg-background block px-3 py-2 rounded-md text-base font-medium"
+                        >
+                          {item.name}
+                        </Disclosure.Button>
                       </motion.div>
-              ))}
-            </div>
-            {/* Mobile menu authentication */}
-            <div className="pt-4 pb-3 border-t border-gray-200">
+                    ))}
+                  </div>
+                  {/* Mobile menu authentication */}
+                  <div className="pt-4 pb-3 border-t border-border">
                     <motion.div 
                       className="px-2 space-y-1"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.2 }}
                     >
-              {user ? (
+                      {user ? (
                         <>
-                  <Disclosure.Button
-                    as={Link}
+                          <Disclosure.Button
+                            as={Link}
                             to={user.role === 'admin' ? '/admin/settings' : '/profile'}
-                    className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
-                  >
+                            className="block px-3 py-2 rounded-md text-base font-medium text-text-primary hover:text-accent hover:bg-background"
+                          >
                             {user.role === 'admin' ? 'Settings' : 'Profile'}
-                  </Disclosure.Button>
+                          </Disclosure.Button>
                           {user.role !== 'admin' && (
-                  <Disclosure.Button
-                    as={Link}
-                    to="/cart"
-                    className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
-                  >
-                    Cart {items.length > 0 && `(${items.length})`}
-                  </Disclosure.Button>
+                            <Disclosure.Button
+                              as={Link}
+                              to="/cart"
+                              className="block px-3 py-2 rounded-md text-base font-medium text-text-primary hover:text-accent hover:bg-background"
+                            >
+                              Cart {items.length > 0 && `(${items.length})`}
+                            </Disclosure.Button>
                           )}
-                  <Disclosure.Button
-                    as="button"
-                    onClick={handleLogout}
-                    className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
-                  >
-                    Sign out
-                  </Disclosure.Button>
+                          <Disclosure.Button
+                            as="button"
+                            onClick={handleLogout}
+                            className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-text-primary hover:text-accent hover:bg-background"
+                          >
+                            Sign out
+                          </Disclosure.Button>
                         </>
-              ) : (
+                      ) : (
                         <>
-                  <Disclosure.Button
-                    as={Link}
-                    to="/login"
-                    className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
-                  >
+                          <Disclosure.Button
+                            as={Link}
+                            to="/login"
+                            className="block px-3 py-2 rounded-md text-base font-medium text-text-primary hover:text-accent hover:bg-background"
+                          >
                             Login
-                  </Disclosure.Button>
-                  <Disclosure.Button
-                    as={Link}
-                    to="/signup"
-                    className="block px-3 py-2 rounded-md text-base font-medium text-gray-900 hover:bg-gray-50"
-                  >
-                    Sign up
-                  </Disclosure.Button>
+                          </Disclosure.Button>
+                          <Disclosure.Button
+                            as={Link}
+                            to="/signup"
+                            className="block px-3 py-2 rounded-md text-base font-medium text-text-primary hover:text-accent hover:bg-background"
+                          >
+                            Sign up
+                          </Disclosure.Button>
                         </>
-              )}
+                      )}
                     </motion.div>
-            </div>
+                  </div>
                 </motion.div>
-          </Disclosure.Panel>
+              </Disclosure.Panel>
             )}
           </AnimatePresence>
         </>

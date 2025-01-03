@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { collection, getDocs, addDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, updateDoc, writeBatch } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { toast } from 'react-hot-toast';
 import {
@@ -78,7 +78,7 @@ export default function AddressSection({ onAddressSelect }) {
       
       // If this is the first address or marked as default, update other addresses
       if (newAddress.isDefault || savedAddresses.length === 0) {
-        const batch = db.batch();
+        const batch = writeBatch(db);
         const snapshot = await getDocs(addressesRef);
         snapshot.docs.forEach((doc) => {
           batch.update(doc.ref, { isDefault: false });

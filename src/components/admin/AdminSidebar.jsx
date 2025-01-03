@@ -48,16 +48,16 @@ export default function AdminSidebar({ isOpen, setIsOpen }) {
         flex flex-col w-64
       `}>
         <div className="flex flex-col h-full">
-          <div className="flex items-center h-16 flex-shrink-0 px-4 bg-gray-900">
+          <div className="flex items-center h-16 flex-shrink-0 px-4 bg-card-bg border-r border-border">
             <Link 
               to="/admin/dashboard" 
-              className="text-white font-bold text-xl"
+              className="text-text-primary font-bold text-xl"
               onClick={handleNavClick}
             >
               Admin Panel
             </Link>
           </div>
-          <div className="flex-1 flex flex-col overflow-y-auto bg-gray-800">
+          <div className="flex-1 flex flex-col overflow-y-auto bg-card-bg border-r border-border">
             <nav className="flex-1 px-2 py-4 space-y-1">
               {navigation.map((item) => {
                 const isActive = location.pathname === item.href;
@@ -72,15 +72,15 @@ export default function AdminSidebar({ isOpen, setIsOpen }) {
                       onClick={handleNavClick}
                       className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md ${
                         isActive
-                          ? 'bg-gray-900 text-white'
-                          : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                          ? 'bg-accent text-white'
+                          : 'text-text-primary hover:bg-background hover:text-accent'
                       }`}
                     >
                       <item.icon
                         className={`mr-3 h-6 w-6 ${
                           isActive
                             ? 'text-white'
-                            : 'text-gray-400 group-hover:text-gray-300'
+                            : 'text-text-secondary group-hover:text-accent'
                         }`}
                         aria-hidden="true"
                       />

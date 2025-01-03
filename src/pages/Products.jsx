@@ -131,7 +131,7 @@ export default function Products() {
 
   return (
     <motion.div 
-      className="bg-gradient-to-br from-gray-50 to-gray-100 min-h-screen py-12 px-4 sm:px-6 lg:px-8"
+      className="bg-background min-h-screen py-12 px-4 sm:px-6 lg:px-8"
       initial="hidden"
       animate="visible"
       variants={containerVariants}
@@ -142,13 +142,13 @@ export default function Products() {
           variants={itemVariants}
         >
           <motion.h2 
-            className="text-4xl font-extrabold text-gray-900 sm:text-5xl"
+            className="text-4xl font-extrabold text-text-primary sm:text-5xl"
             variants={itemVariants}
           >
             Our Products
           </motion.h2>
           <motion.p 
-            className="mt-4 text-xl text-gray-500 max-w-2xl mx-auto"
+            className="mt-4 text-xl text-text-secondary max-w-2xl mx-auto"
             variants={itemVariants}
           >
             Browse our collection of high-quality electronics
@@ -163,14 +163,36 @@ export default function Products() {
             {loading ? (
               // Skeleton Loading
               [...Array(6)].map((_, index) => (
-                <ProductSkeleton key={index} />
+                <motion.div 
+                  key={index}
+                  className="bg-card-bg rounded-2xl shadow-lg p-6 animate-pulse"
+                  variants={cardVariants}
+                >
+                  <div className="relative h-[300px] bg-background rounded-lg mb-4"></div>
+                  <div className="space-y-3">
+                    <div className="h-6 bg-background rounded w-3/4"></div>
+                    <div className="flex space-x-1">
+                      {[...Array(5)].map((_, i) => (
+                        <div key={i} className="h-5 w-5 bg-background rounded"></div>
+                      ))}
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-4 bg-background rounded"></div>
+                      <div className="h-4 bg-background rounded w-5/6"></div>
+                    </div>
+                    <div className="flex justify-between items-center pt-4">
+                      <div className="h-8 w-24 bg-background rounded"></div>
+                      <div className="h-10 w-32 bg-background rounded"></div>
+                    </div>
+                  </div>
+                </motion.div>
               ))
             ) : (
               // Actual Products
               products.map((product, index) => (
                 <motion.div
                   key={product.id}
-                  className="group bg-white rounded-2xl shadow-lg p-6"
+                  className="group bg-card-bg rounded-2xl shadow-lg p-6"
                   variants={cardVariants}
                   whileHover={{ 
                     y: -8,
@@ -201,7 +223,7 @@ export default function Products() {
                     variants={itemVariants}
                   >
                     <motion.h3 
-                      className="text-lg font-medium text-gray-900 line-clamp-1 group-hover:text-blue-600 transition-colors"
+                      className="text-lg font-medium text-text-primary line-clamp-1 group-hover:text-accent transition-colors"
                       variants={itemVariants}
                     >
                       {product.title}
@@ -214,31 +236,31 @@ export default function Products() {
                       <div className="flex items-center">
                         {renderStars(product.rating.rate)}
                       </div>
-                      <span className="text-sm text-gray-500">
+                      <span className="text-sm text-text-secondary">
                         ({product.rating.count})
                       </span>
                     </motion.div>
 
                     <motion.p 
-                      className="text-sm text-gray-500 line-clamp-2 min-h-[40px]"
+                      className="text-sm text-text-secondary line-clamp-2 min-h-[40px]"
                       variants={itemVariants}
                     >
                       {product.description}
                     </motion.p>
 
                     <motion.div 
-                      className="pt-4 flex items-center justify-between border-t border-gray-100"
+                      className="pt-4 flex items-center justify-between border-t border-border"
                       variants={itemVariants}
                     >
                       <motion.p 
-                        className="text-2xl font-bold text-gray-900"
+                        className="text-2xl font-bold text-text-primary"
                         whileHover={{ scale: 1.05 }}
                       >
                         ${product.price.toFixed(2)}
                       </motion.p>
                       <motion.button
                         onClick={() => handleAddToCart(product)}
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-full shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-full shadow-sm text-white bg-accent hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent"
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                       >
@@ -261,7 +283,7 @@ export default function Products() {
             transition={{ duration: 0.5 }}
           >
             <motion.p 
-              className="text-gray-500 text-lg"
+              className="text-text-secondary text-lg"
               variants={itemVariants}
             >
               No products found. Please try again later.

@@ -143,18 +143,18 @@ export default function Services() {
         </motion.div>
 
         <motion.div 
-          className="mt-16 bg-blue-50 rounded-lg p-8"
+          className="mt-16 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-8"
           variants={cardVariants}
           whileHover={{ scale: 1.02 }}
         >
           <motion.h3 
-            className="text-2xl font-bold text-gray-900"
+            className="text-2xl font-bold text-gray-900 dark:text-white"
             variants={itemVariants}
           >
             Need Custom Services?
           </motion.h3>
           <motion.p 
-            className="mt-4 text-lg text-gray-500"
+            className="mt-4 text-lg text-gray-500 dark:text-white"
             variants={itemVariants}
           >
             Contact us to discuss your specific requirements. We offer customized solutions

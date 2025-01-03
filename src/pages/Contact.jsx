@@ -98,7 +98,7 @@ export default function Contact() {
 
   return (
     <motion.div 
-      className="bg-gradient-to-b from-gray-50 to-white min-h-screen py-16 px-4 sm:px-6 lg:px-8"
+      className="bg-background min-h-screen py-16 px-4 sm:px-6 lg:px-8"
       initial="hidden"
       animate="visible"
       variants={containerVariants}
@@ -109,13 +109,13 @@ export default function Contact() {
           variants={itemVariants}
         >
           <motion.h2 
-            className="text-4xl font-bold text-gray-900 sm:text-5xl"
+            className="text-4xl font-bold text-text-primary sm:text-5xl"
             variants={itemVariants}
           >
             Get in Touch
           </motion.h2>
           <motion.div 
-            className="mt-4 text-xl text-gray-500 max-w-2xl mx-auto"
+            className="mt-4 text-xl text-text-secondary max-w-2xl mx-auto"
             variants={itemVariants}
           >
             Have questions about our services? We're here to help and would love to hear from you.
@@ -130,7 +130,7 @@ export default function Contact() {
           >
             {/* Info Card */}
             <motion.div 
-              className="bg-white rounded-2xl shadow-xl p-8"
+              className="bg-card-bg rounded-2xl shadow-xl p-8"
               variants={cardVariants}
               whileHover={{ scale: 1.02, boxShadow: "0 8px 30px rgba(0,0,0,0.12)" }}
             >
@@ -147,10 +147,10 @@ export default function Contact() {
                     whileHover={{ x: 5 }}
                     custom={index}
                   >
-                    <item.icon className="h-6 w-6 text-blue-600 mt-1" />
+                    <item.icon className="h-6 w-6 text-accent mt-1" />
                     <div className="ml-4">
-                      <p className="text-gray-900 font-semibold">{item.title}</p>
-                      <p className="text-gray-600 mt-1 whitespace-pre-line">{item.content}</p>
+                      <p className="text-text-primary font-semibold">{item.title}</p>
+                      <p className="text-text-secondary mt-1 whitespace-pre-line">{item.content}</p>
                     </div>
                   </motion.div>
                 ))}
@@ -159,7 +159,7 @@ export default function Contact() {
 
             {/* Business Hours Card */}
             <motion.div 
-              className="bg-white rounded-2xl shadow-xl p-8"
+              className="bg-card-bg rounded-2xl shadow-xl p-8"
               variants={cardVariants}
               whileHover={{ scale: 1.02, boxShadow: "0 8px 30px rgba(0,0,0,0.12)" }}
             >
@@ -167,9 +167,9 @@ export default function Contact() {
                 className="flex items-start mb-6"
                 variants={itemVariants}
               >
-                <ClockIcon className="h-6 w-6 text-blue-600 mt-1" />
+                <ClockIcon className="h-6 w-6 text-accent mt-1" />
                 <div className="ml-4">
-                  <p className="text-gray-900 font-semibold">Business Hours</p>
+                  <p className="text-text-primary font-semibold">Business Hours</p>
                 </div>
               </motion.div>
               <motion.div className="space-y-4">
@@ -181,8 +181,8 @@ export default function Contact() {
                     whileHover={{ x: 5 }}
                     custom={index}
                   >
-                    <span className="text-gray-600">{hour.day}</span>
-                    <span className="text-gray-900 font-medium">{hour.hours}</span>
+                    <span className="text-text-secondary">{hour.day}</span>
+                    <span className="text-text-primary font-medium">{hour.hours}</span>
                   </motion.div>
                 ))}
               </motion.div>
@@ -195,11 +195,11 @@ export default function Contact() {
             variants={cardVariants}
           >
             <motion.div 
-              className="bg-white rounded-2xl shadow-xl p-8"
+              className="bg-card-bg rounded-2xl shadow-xl p-8"
               whileHover={{ boxShadow: "0 8px 30px rgba(0,0,0,0.12)" }}
             >
               <motion.h3 
-                className="text-2xl font-bold text-gray-900 mb-8"
+                className="text-2xl font-bold text-text-primary mb-8"
                 variants={itemVariants}
               >
                 Send us a Message
@@ -229,12 +229,12 @@ export default function Contact() {
                         required
                         value={formData[field.name]}
                         onChange={handleChange}
-                        className="peer w-full border-0 border-b-2 border-gray-300 bg-transparent py-2.5 px-0 text-gray-900 placeholder-transparent focus:border-blue-600 focus:outline-none"
+                        className="peer w-full border-0 border-b-2 border-border bg-transparent py-2.5 px-0 text-text-primary placeholder-transparent focus:border-accent focus:outline-none"
                         placeholder={field.label}
                       />
                       <label 
                         htmlFor={field.name}
-                        className="absolute left-0 -top-3.5 text-sm text-gray-600 transition-all peer-placeholder-shown:top-2.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:-top-3.5 peer-focus:text-sm peer-focus:text-blue-600"
+                        className="absolute left-0 -top-3.5 text-sm text-text-secondary transition-all peer-placeholder-shown:top-2.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-text-secondary peer-focus:-top-3.5 peer-focus:text-sm peer-focus:text-accent"
                       >
                         {field.label}
                       </label>
@@ -254,12 +254,12 @@ export default function Contact() {
                     required
                     value={formData.subject}
                     onChange={handleChange}
-                    className="peer w-full border-0 border-b-2 border-gray-300 bg-transparent py-2.5 px-0 text-gray-900 placeholder-transparent focus:border-blue-600 focus:outline-none"
+                    className="peer w-full border-0 border-b-2 border-border bg-transparent py-2.5 px-0 text-text-primary placeholder-transparent focus:border-accent focus:outline-none"
                     placeholder="Subject"
                   />
                   <label 
                     htmlFor="subject"
-                    className="absolute left-0 -top-3.5 text-sm text-gray-600 transition-all peer-placeholder-shown:top-2.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:-top-3.5 peer-focus:text-sm peer-focus:text-blue-600"
+                    className="absolute left-0 -top-3.5 text-sm text-text-secondary transition-all peer-placeholder-shown:top-2.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-text-secondary peer-focus:-top-3.5 peer-focus:text-sm peer-focus:text-accent"
                   >
                     Subject
                   </label>
@@ -277,12 +277,12 @@ export default function Contact() {
                     required
                     value={formData.message}
                     onChange={handleChange}
-                    className="peer w-full border-0 border-b-2 border-gray-300 bg-transparent py-2.5 px-0 text-gray-900 placeholder-transparent focus:border-blue-600 focus:outline-none resize-none"
+                    className="peer w-full border-0 border-b-2 border-border bg-transparent py-2.5 px-0 text-text-primary placeholder-transparent focus:border-accent focus:outline-none resize-none"
                     placeholder="Message"
                   />
                   <label 
                     htmlFor="message"
-                    className="absolute left-0 -top-3.5 text-sm text-gray-600 transition-all peer-placeholder-shown:top-2.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:-top-3.5 peer-focus:text-sm peer-focus:text-blue-600"
+                    className="absolute left-0 -top-3.5 text-sm text-text-secondary transition-all peer-placeholder-shown:top-2.5 peer-placeholder-shown:text-base peer-placeholder-shown:text-text-secondary peer-focus:-top-3.5 peer-focus:text-sm peer-focus:text-accent"
                   >
                     Message
                   </label>
@@ -295,7 +295,7 @@ export default function Contact() {
                   <motion.button
                     type="submit"
                     disabled={loading}
-                    className={`w-full py-3 px-4 border border-transparent rounded-xl shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all ${
+                    className={`w-full py-3 px-4 border border-transparent rounded-xl shadow-sm text-white bg-accent hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent transition-all ${
                       loading ? 'opacity-50 cursor-not-allowed' : ''
                     }`}
                     whileHover={{ scale: 1.05 }}

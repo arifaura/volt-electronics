@@ -3,10 +3,93 @@
 @tailwind utilities;
 
 @layer base {
-  input[type='text'],
-  input[type='email'],
-  input[type='tel'],
+  :root {
+    /* Light theme variables */
+    --background: #ffffff;
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --border: #e5e7eb;
+    --card-bg: #ffffff;
+    --toast-bg: #333333;
+    --toast-text: #ffffff;
+    --input-bg: #ffffff;
+    --input-border: #d1d5db;
+    --header-bg: #ffffff;
+    --sidebar-bg: #ffffff;
+  }
+
+  :root[class='dark'] {
+    /* Dark theme variables */
+    --background: #111827;
+    --text-primary: #f3f4f6;
+    --text-secondary: #9ca3af;
+    --accent: #3b82f6;
+    --accent-hover: #2563eb;
+    --border: #374151;
+    --card-bg: #1f2937;
+    --toast-bg: #ffffff;
+    --toast-text: #111827;
+    --input-bg: #1f2937;
+    --input-border: #374151;
+    --header-bg: #1f2937;
+    --sidebar-bg: #1f2937;
+  }
+
+  body {
+    @apply transition-colors duration-200;
+    background-color: var(--background);
+    color: var(--text-primary);
+  }
+
+  /* Apply theme colors to common elements */
+  .bg-white {
+    background-color: var(--card-bg) !important;
+  }
+
+  .bg-gray-50,
+  .bg-gray-100 {
+    background-color: var(--background) !important;
+  }
+
+  .text-gray-500 {
+    color: var(--text-secondary) !important;
+  }
+
+  .text-gray-700,
+  .text-gray-900 {
+    color: var(--text-primary) !important;
+  }
+
+  .border-gray-300 {
+    border-color: var(--border) !important;
+  }
+
+  /* Input styles */
+  input,
+  select,
   textarea {
-    @apply border-gray-300 rounded-md shadow-sm;
+    background-color: var(--input-bg) !important;
+    border-color: var(--input-border) !important;
+    color: var(--text-primary) !important;
+  }
+
+  /* Header and navigation */
+  nav,
+  header {
+    background-color: var(--header-bg) !important;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    background-color: var(--sidebar-bg) !important;
+  }
+
+  /* Add smooth transitions for theme changes */
+  * {
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 200ms;
   }
 } 
