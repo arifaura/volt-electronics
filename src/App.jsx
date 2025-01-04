@@ -10,12 +10,16 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import ForgotPassword from './pages/ForgotPassword';
 import Cart from './pages/Cart';
+import Wishlist from './pages/Wishlist';
 import ScrollToTop from './components/utils/ScrollToTop';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import NotFound from './pages/NotFound';
 import Profile from './pages/Profile';
 import OrderDetails from './pages/OrderDetails';
-import { useAuth } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { CartProvider } from './context/CartContext';
+import { WishlistProvider } from './context/WishlistContext';
+import { CouponProvider } from './context/CouponContext';
 
 // Admin imports
 import AdminLayout from './components/admin/AdminLayout';
@@ -43,70 +47,90 @@ function App() {
   };
 
   return (
-    <>
-      <ScrollToTop />
-      <Routes>
-        {/* Root route with role-based redirect */}
-        <Route path="/" element={<RootRedirect />} />
+    <AuthProvider>
+      <CartProvider>
+        <WishlistProvider>
+          <CouponProvider>
+            <ScrollToTop />
+            <Routes>
+              {/* Root route with role-based redirect */}
+              <Route path="/" element={<RootRedirect />} />
 
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        
-        {/* Admin Auth Routes */}
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin/signup" element={<AdminSignup />} />
-        <Route path="/admin/forgot-password" element={<AdminForgotPassword />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              
+              {/* Admin Auth Routes */}
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route path="/admin/signup" element={<AdminSignup />} />
+              <Route path="/admin/forgot-password" element={<AdminForgotPassword />} />
 
-        {/* Protected Admin Routes */}
-        <Route
-          path="/admin/*"
-          element={
-            <ProtectedRoute requireAdmin>
-              <AdminLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="users" element={<AdminUsers />} />
-          <Route path="orders" element={<Orders />} />
-          <Route path="customers" element={<Customers />} />
-          <Route path="analytics" element={<Analytics />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="messages" element={<Messages />} />
-        </Route>
+              {/* Protected Admin Routes */}
+              <Route
+                path="/admin/*"
+                element={
+                  <ProtectedRoute requireAdmin>
+                    <AdminLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Navigate to="dashboard" replace />} />
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="orders" element={<Orders />} />
+                <Route path="customers" element={<Customers />} />
+                <Route path="analytics" element={<Analytics />} />
+                <Route path="settings" element={<Settings />} />
+                <Route path="messages" element={<Messages />} />
+              </Route>
 
-        {/* Customer Routes */}
-        <Route path="/" element={<Layout />}>
-          <Route path="products" element={<Products />} />
-          <Route path="about" element={<About />} />
-          <Route path="services" element={<Services />} />
-          <Route path="contact" element={<Contact />} />
-          <Route path="profile" element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          } />
-          <Route path="cart" element={
-            <ProtectedRoute>
-              <Cart />
-            </ProtectedRoute>
-          } />
-          <Route path="*" element={<NotFound />} />
-        </Route>
+              {/* Customer Routes */}
+              <Route path="/" element={<Layout />}>
+                <Route path="products" element={<Products />} />
+                <Route path="about" element={<About />} />
+                <Route path="services" element={<Services />} />
+                <Route path="contact" element={<Contact />} />
+                <Route path="wishlist" element={
+                  <ProtectedRoute>
+                    <Wishlist />
+                  </ProtectedRoute>
+                } />
+                <Route path="profile" element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                } />
+                <Route path="cart" element={
+                  <ProtectedRoute>
+                    <Cart />
+                  </ProtectedRoute>
+                } />
+                <Route path="*" element={<NotFound />} />
+              </Route>
 
-        <Route 
-          path="/orders/:orderId" 
-          element={
-            <ProtectedRoute>
-              <OrderDetails />
-            </ProtectedRoute>
-          } 
-        />
-      </Routes>
-    </>
+              <Route 
+                path="/orders/:orderId" 
+                element={
+                  <ProtectedRoute>
+                    <OrderDetails />
+                  </ProtectedRoute>
+                } 
+              />
+            </Routes>
+          </CouponProvider>
+        </WishlistProvider>
+      </CartProvider>
+    </AuthProvider>
   );
 }
 
-export default App; 
+// Wrap the App with AuthProvider
+function AppWithAuth() {
+  return (
+    <AuthProvider>
+      <App />
+    </AuthProvider>
+  );
+}
+
+export default AppWithAuth; 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { doc, updateDoc, collection, getDocs, addDoc, query, where, orderBy, writeBatch, deleteDoc, serverTimestamp, onSnapshot } from 'firebase/firestore';
+import { doc, updateDoc, collection, getDocs, addDoc, query, where, orderBy, writeBatch, deleteDoc, serverTimestamp, onSnapshot, getDoc } from 'firebase/firestore';
+import { updateProfile } from 'firebase/auth';
 import { db } from '../config/firebase';
 import { toast } from 'react-hot-toast';
 import { 
@@ -20,6 +21,7 @@ import {
   StarIcon
 } from '@heroicons/react/outline';
 import { Link, useLocation } from 'react-router-dom';
+import CancelOrderModal from '../components/modals/CancelOrderModal';
 
 export default function Profile() {
   const { user, updatePassword } = useAuth();
@@ -35,11 +37,17 @@ export default function Profile() {
   const [savedCards, setSavedCards] = useState([]);
   const [showAddPayment, setShowAddPayment] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   const [profileData, setProfileData] = useState({
     name: user?.name || '',
     email: user?.email || '',
     phone: user?.phone || '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
     preferences: {
       notifications: {
         email: true,
@@ -116,11 +124,15 @@ export default function Profile() {
     
     // Set up real-time listener
     return onSnapshot(q, (snapshot) => {
-      const ordersList = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate().toLocaleString()
-      }));
+      const ordersList = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          displayDate: data.createdAt?.toDate?.() || new Date(), // For display purposes
+          createdAt: data.createdAt // Keep original timestamp for the modal
+        };
+      });
       
       setOrders(ordersList);
       setOrdersLoading(false);
@@ -310,6 +322,36 @@ export default function Profile() {
     }
   };
 
+  const fetchProfileData = async () => {
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userRef);
+      
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        setProfileData(prev => ({
+          ...prev,
+          name: userData.name || user.displayName || '',
+          phone: userData.phone || '',
+          address: userData.address || '',
+          city: userData.city || '',
+          state: userData.state || '',
+          zipCode: userData.zipCode || '',
+          preferences: userData.preferences || prev.preferences
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching profile data:', error);
+      toast.error('Failed to load profile data');
+    }
+  };
+
+  useEffect(() => {
+    if (user?.uid) {
+      fetchProfileData();
+    }
+  }, [user?.uid]);
+
   const handleProfileUpdate = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -319,9 +361,20 @@ export default function Profile() {
       await updateDoc(userRef, {
         name: profileData.name,
         phone: profileData.phone,
+        address: profileData.address,
+        city: profileData.city,
+        state: profileData.state,
+        zipCode: profileData.zipCode,
         preferences: profileData.preferences,
-        updatedAt: new Date().toISOString()
+        updatedAt: serverTimestamp()
       });
+
+      // Update auth user profile if name has changed
+      if (user.name !== profileData.name) {
+        await updateProfile(user, {
+          displayName: profileData.name
+        });
+      }
 
       toast.success('Profile updated successfully');
     } catch (error) {
@@ -518,6 +571,11 @@ export default function Profile() {
     return colors[status?.toLowerCase()] || 'bg-gray-100 text-gray-800';
   };
 
+  const handleCancelClick = (order) => {
+    setSelectedOrder(order);
+    setShowCancelModal(true);
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <div className="lg:grid lg:grid-cols-12 lg:gap-x-5">
@@ -700,6 +758,19 @@ export default function Profile() {
                   Order History
                 </h3>
 
+                {/* Cancel Order Modal */}
+                {showCancelModal && (
+                  <CancelOrderModal
+                    order={selectedOrder}
+                    isOpen={showCancelModal}
+                    onClose={() => setShowCancelModal(false)}
+                    onCancelled={() => {
+                      fetchOrders();
+                      setShowCancelModal(false);
+                    }}
+                  />
+                )}
+
                 {/* Order Status Tabs */}
                 <div className="mt-4 border-b border-gray-200">
                   <nav className="-mb-px flex space-x-4 overflow-x-auto" aria-label="Order status tabs">
@@ -745,7 +816,9 @@ export default function Profile() {
                             <p className="text-sm font-medium text-gray-900">
                               Order #{order.id}
                             </p>
-                            <p className="text-sm text-gray-500">{order.createdAt}</p>
+                            <p className="text-sm text-gray-500">
+                              {order.displayDate instanceof Date ? order.displayDate.toLocaleString() : 'N/A'}
+                            </p>
                             <p className="text-sm text-gray-600 mt-1">
                               Ordered by: {order.customerInfo?.name || 'N/A'}
                             </p>
@@ -767,12 +840,22 @@ export default function Profile() {
                           </p>
                         </div>
                         <div className="mt-4">
+                          <div className="flex justify-between items-center">
                           <Link
                             to={`/orders/${order.id}`}
                             className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                           >
                             View Details →
                           </Link>
+                            {(order.status === 'pending' || order.status === 'processing') && (
+                              <button
+                                onClick={() => handleCancelClick(order)}
+                                className="text-red-600 hover:text-red-800 text-sm font-medium"
+                              >
+                                Cancel Order
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
