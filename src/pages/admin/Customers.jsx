@@ -24,7 +24,7 @@ export default function Customers() {
     totalSpent: 0,
     orderCount: 0,
     averageOrderValue: 0,
-    lastOrderDate: null
+    lastOrderDate: 'N/A',
   });
 
   // Fetch customers
@@ -75,12 +75,11 @@ export default function Customers() {
   // Fetch customer orders when a customer is selected
   useEffect(() => {
     if (!selectedCustomer) return;
-
     const fetchCustomerOrders = async () => {
       try {
         const q = query(
           collection(db, 'orders'),
-          where('customerInfo.userId', '==', selectedCustomer.id)
+          where('customerInfo.email', '==', selectedCustomer.email) // Match by email or userId
         );
 
         const snapshot = await getDocs(q);
@@ -89,24 +88,23 @@ export default function Customers() {
           return {
             id: doc.id,
             ...data,
-            createdAt: data.createdAt?.toDate?.() || null
+            createdAt: data.createdAt?.toDate() || null // Convert Firestore timestamp to Date
           };
         }).sort((a, b) => {
           if (!a.createdAt || !b.createdAt) return 0;
-          return b.createdAt - a.createdAt;
+          return b.createdAt - a.createdAt; // Sort by createdAt
         });
-
-        setCustomerOrders(orders);
+        setCustomerOrders(orders); // Update the state with fetched orders
 
         // Calculate customer metrics
-        const totalSpent = orders.reduce((sum, order) => sum + (order.total || 0), 0);
+        const totalSpent = orders.reduce((sum, order) => sum + (order.orderSummary.total || 0), 0);
         const lastOrder = orders[0];
 
         setCustomerMetrics({
           totalSpent,
           orderCount: orders.length,
           averageOrderValue: orders.length ? totalSpent / orders.length : 0,
-          lastOrderDate: lastOrder?.createdAt || null
+          lastOrderDate: lastOrder?.createdAt ? format(new Date(lastOrder.createdAt), 'MMMM dd, yyyy') : 'N/A', // Check for valid date
         });
       } catch (error) {
         console.error('Error fetching customer orders:', error);
@@ -367,7 +365,7 @@ export default function Customers() {
                       <div className="px-4 py-5 bg-gray-50 shadow-sm rounded-lg overflow-hidden sm:p-6">
                         <dt className="text-sm font-medium text-gray-500 truncate">Last Order</dt>
                         <dd className="mt-1 text-3xl font-semibold text-gray-900">
-                          {customerMetrics.lastOrderDate ? format(customerMetrics.lastOrderDate, 'MMM d') : 'N/A'}
+                          {customerMetrics.lastOrderDate}
                         </dd>
                       </div>
                     </dl>
@@ -388,8 +386,7 @@ export default function Customers() {
                       customerOrders.map((order) => (
                         <div
                           key={order.id}
-                          className={`px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors duration-150 ${selectedOrder?.id === order.id ? 'bg-blue-50' : ''
-                            }`}
+                          className={`px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors duration-150`}
                           onClick={() => setSelectedOrder(order)}
                         >
                           <div className="flex justify-between items-center">
@@ -398,34 +395,31 @@ export default function Customers() {
                                 Order #{order.id.slice(-6).toUpperCase()}
                               </p>
                               <p className="text-sm text-gray-500">
-                                {order.createdAt ? format(order.createdAt, 'MMM d, yyyy h:mm a') : 'N/A'}
+                                {order.createdAt ? order.createdAt.toLocaleString() : 'N/A'}
                               </p>
                             </div>
                             <div className="flex items-center space-x-4">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${order.status === 'delivered' ? 'bg-green-100 text-green-800' :
-                                order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                  'bg-yellow-100 text-yellow-800'
-                                }`}>
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${order.status === 'delivered' ? 'bg-green-100 text-green-800' : order.status === 'cancelled' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
                                 {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                               </span>
                               <span className="text-sm font-medium text-gray-900">
-                                ${(order.total || 0).toFixed(2)}
+                                ${order.orderSummary.total.toFixed(2)}
                               </span>
                             </div>
                           </div>
                           {selectedOrder?.id === order.id && (
                             <div className="mt-3 pt-3 border-t border-gray-200">
                               <div className="space-y-2">
-                                <h4 className="text-sm font-medium text-gray-900">Order Details</h4>
-                                {order.items?.map((item, index) => (
+                                <h4 className="text-sm font-medium text-gray-900">Order Items</h4>
+                                {order.items.map((item, index) => (
                                   <div key={index} className="flex justify-between text-sm">
-                                    <span className="text-gray-600">{item.name} x{item.quantity}</span>
+                                    <span className="text-gray-600">{item.title} x{item.quantity}</span>
                                     <span className="text-gray-900">${(item.price * item.quantity).toFixed(2)}</span>
                                   </div>
                                 ))}
                                 <div className="flex justify-between text-sm font-medium pt-2">
                                   <span className="text-gray-900">Total</span>
-                                  <span className="text-gray-900">${(order.total || 0).toFixed(2)}</span>
+                                  <span className="text-gray-900">${order.orderSummary.total.toFixed(2)}</span>
                                 </div>
                               </div>
                             </div>
