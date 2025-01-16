@@ -3,12 +3,13 @@ import { collection, query, orderBy, onSnapshot, doc, updateDoc, where, getDocs 
 import { db } from '../../config/firebase';
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
-import { 
+import {
   UserIcon,
   SearchIcon,
   BanIcon,
   CheckCircleIcon
 } from '@heroicons/react/outline';
+import { data } from 'autoprefixer';
 
 export default function Customers() {
   const [customers, setCustomers] = useState([]);
@@ -31,76 +32,35 @@ export default function Customers() {
     let unsubscribe;
     const fetchCustomers = async () => {
       try {
-        // First try to get all users without ordering
         const basicQuery = query(
           collection(db, 'users'),
           where('role', '==', 'customer')
         );
 
         const basicSnapshot = await getDocs(basicQuery);
+        // console.log('Raw customer data:', basicSnapshot.docs.map(doc => doc.data())); // Log raw data
+
         const initialCustomerData = basicSnapshot.docs.map(doc => {
           const data = doc.data();
+          // console.log(`Document ID: ${doc.id}, Data:`, data); // Log each document's data
           return {
             id: doc.id,
             ...data,
-            createdAt: data.createdAt?.toDate?.() || null
+            createdAt: data.createdAt ? (data.createdAt.toDate ? data.createdAt.toDate() : new Date(data.createdAt)) : null, // Handle Firestore Timestamp
           };
         });
+
+        // console.log('Fetched customers:', initialCustomerData); // Log the processed customer data
         setCustomers(initialCustomerData);
         setLoading(false);
 
-        // Then try to set up the ordered query
-        const orderedQuery = query(
-          collection(db, 'users'),
-          where('role', '==', 'customer'),
-          orderBy('createdAt', 'desc')
-        );
-
-        unsubscribe = onSnapshot(orderedQuery, (snapshot) => {
-          const customerData = snapshot.docs.map(doc => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              ...data,
-              createdAt: data.createdAt?.toDate?.() || null
-            };
-          });
-          setCustomers(customerData);
-          setIndexError(false);
-        }, (error) => {
-          if (error.code === 'failed-precondition') {
-            console.error('Index required:', error);
-            setIndexError(true);
-            const indexUrl = error.message.match(/https:\/\/console\.firebase\.google\.com\S+/);
-            if (indexUrl) {
-              toast((t) => (
-                <div onClick={() => {window.open(indexUrl[0], '_blank')}}>
-                  <p>Click here to create the required index</p>
-                  <small className="text-xs">This will open Firebase Console</small>
-                </div>
-              ), {
-                duration: 5000,
-                style: {
-                  cursor: 'pointer',
-                  background: '#4B5563',
-                  color: 'white',
-                }
-              });
-            }
-          } else {
-            console.error('Error in snapshot listener:', error);
-            toast.error('Error loading customers');
-          }
-        });
+        // Optionally, you can set the first customer as selected if needed
+        // if (initialCustomerData.length > 0) {
+        //   setSelectedCustomer(initialCustomerData[0]); // Set the first customer as selected
+        // }
       } catch (error) {
         console.error('Error fetching customers:', error);
         setLoading(false);
-        if (error.code === 'failed-precondition') {
-          setIndexError(true);
-          toast.error('Index required. Check console for details.');
-        } else {
-          toast.error('Error loading customers');
-        }
       }
     };
 
@@ -171,17 +131,37 @@ export default function Customers() {
   };
 
   const filteredCustomers = customers.filter(customer => {
-    const matchesSearch = searchQuery === '' || 
+    const matchesSearch = searchQuery === '' ||
       customer.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       customer.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       customer.phone?.includes(searchQuery);
 
-    const matchesFilter = filter === 'all' || 
+    const matchesFilter = filter === 'all' ||
       (filter === 'active' && customer.isActive) ||
       (filter === 'inactive' && !customer.isActive);
 
     return matchesSearch && matchesFilter;
   });
+
+  useEffect(() => {
+    // console.log('Selected Customer:', selectedCustomer);
+  }, [selectedCustomer]);
+
+  const memberSince = selectedCustomer?.createdAt
+    ? format(new Date(selectedCustomer.createdAt), 'MMMM dd, yyyy')
+    : 'No Member Since';
+
+  // Function to handle customer selection
+  const handleCustomerSelect = (customer) => {
+    // console.log('Selected Customer Data:', customer);
+    setSelectedCustomer({
+      id: customer.id,
+      name: customer.name,
+      email: customer.email,
+      phone: customer.phone,
+      createdAt: customer.createdAt,
+    });
+  };
 
   if (loading) {
     return (
@@ -239,30 +219,27 @@ export default function Customers() {
                 placeholder="Search customers..."
                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               />
-        </div>
+            </div>
 
             <div className="flex gap-2">
               <button
                 onClick={() => setFilter('all')}
-                className={`px-4 py-2 rounded-md text-sm font-medium ${
-                  filter === 'all' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
-                }`}
+                className={`px-4 py-2 rounded-md text-sm font-medium ${filter === 'all' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
               >
                 All
               </button>
               <button
                 onClick={() => setFilter('active')}
-                className={`px-4 py-2 rounded-md text-sm font-medium ${
-                  filter === 'active' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
-                }`}
+                className={`px-4 py-2 rounded-md text-sm font-medium ${filter === 'active' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
               >
                 Active
               </button>
               <button
                 onClick={() => setFilter('inactive')}
-                className={`px-4 py-2 rounded-md text-sm font-medium ${
-                  filter === 'inactive' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
-                }`}
+                className={`px-4 py-2 rounded-md text-sm font-medium ${filter === 'inactive' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
               >
                 Inactive
               </button>
@@ -282,15 +259,14 @@ export default function Customers() {
                 filteredCustomers.map((customer) => (
                   <div
                     key={customer.id}
-                    className={`p-4 cursor-pointer hover:bg-gray-50 ${
-                      selectedCustomer?.id === customer.id ? 'bg-gray-50' : ''
-                    }`}
-                    onClick={() => setSelectedCustomer(customer)}
+                    className={`p-4 cursor-pointer hover:bg-gray-50 ${selectedCustomer?.id === customer.id ? 'bg-gray-50' : ''
+                      }`}
+                    onClick={() => handleCustomerSelect(customer)}
                   >
                     <div className="flex items-center space-x-3">
-              <div className="flex-shrink-0">
+                      <div className="flex-shrink-0">
                         <UserIcon className="h-6 w-6 text-gray-400" />
-              </div>
+                      </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900 truncate">
                           {customer.name}
@@ -298,16 +274,15 @@ export default function Customers() {
                         <p className="text-sm text-gray-500 truncate">
                           {customer.email}
                         </p>
-              </div>
+                      </div>
                       <div className="flex-shrink-0">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          customer.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${customer.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                          }`}>
                           {customer.isActive ? 'Active' : 'Inactive'}
                         </span>
-            </div>
-          </div>
-        </div>
+                      </div>
+                    </div>
+                  </div>
                 ))
               )}
             </div>
@@ -326,11 +301,10 @@ export default function Customers() {
                       </h2>
                       <button
                         onClick={() => updateCustomerStatus(selectedCustomer.id, !selectedCustomer.isActive)}
-                        className={`inline-flex items-center px-3 py-2 border shadow-sm text-sm leading-4 font-medium rounded-md ${
-                          selectedCustomer.isActive
-                            ? 'border-red-300 text-red-700 bg-white hover:bg-red-50'
-                            : 'border-green-300 text-green-700 bg-white hover:bg-green-50'
-                        }`}
+                        className={`inline-flex items-center px-3 py-2 border shadow-sm text-sm leading-4 font-medium rounded-md ${selectedCustomer.isActive
+                          ? 'border-red-300 text-red-700 bg-white hover:bg-red-50'
+                          : 'border-green-300 text-green-700 bg-white hover:bg-green-50'
+                          }`}
                       >
                         {selectedCustomer.isActive ? (
                           <>
@@ -344,32 +318,32 @@ export default function Customers() {
                           </>
                         )}
                       </button>
-        </div>
-      </div>
+                    </div>
+                  </div>
 
                   <div className="px-6 py-4">
                     <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
                       <div className="sm:col-span-1">
                         <dt className="text-sm font-medium text-gray-500">Full Name</dt>
                         <dd className="mt-1 text-sm text-gray-900">{selectedCustomer.name}</dd>
-            </div>
+                      </div>
                       <div className="sm:col-span-1">
                         <dt className="text-sm font-medium text-gray-500">Email</dt>
                         <dd className="mt-1 text-sm text-gray-900">{selectedCustomer.email}</dd>
-          </div>
+                      </div>
                       <div className="sm:col-span-1">
                         <dt className="text-sm font-medium text-gray-500">Phone</dt>
-                        <dd className="mt-1 text-sm text-gray-900">{selectedCustomer.phone || 'N/A'}</dd>
-        </div>
+                        <dd className="mt-1 text-sm text-gray-900">{selectedCustomer?.phone || 'N/A'}</dd>
+                      </div>
                       <div className="sm:col-span-1">
                         <dt className="text-sm font-medium text-gray-500">Member Since</dt>
                         <dd className="mt-1 text-sm text-gray-900">
-                          {selectedCustomer.createdAt ? format(selectedCustomer.createdAt, 'MMM d, yyyy') : 'N/A'}
+                          {memberSince}
                         </dd>
-          </div>
+                      </div>
                     </dl>
-        </div>
-      </div>
+                  </div>
+                </div>
 
                 {/* Customer Metrics */}
                 <div className="bg-white rounded-lg shadow-sm overflow-hidden p-4">
@@ -385,11 +359,11 @@ export default function Customers() {
                       <div className="px-4 py-5 bg-gray-50 shadow-sm rounded-lg overflow-hidden sm:p-6">
                         <dt className="text-sm font-medium text-gray-500 truncate">Total Spent</dt>
                         <dd className="mt-1 text-3xl font-semibold text-gray-900">${customerMetrics.totalSpent.toFixed(2)}</dd>
-                    </div>
+                      </div>
                       <div className="px-4 py-5 bg-gray-50 shadow-sm rounded-lg overflow-hidden sm:p-6">
                         <dt className="text-sm font-medium text-gray-500 truncate">Average Order</dt>
                         <dd className="mt-1 text-3xl font-semibold text-gray-900">${customerMetrics.averageOrderValue.toFixed(2)}</dd>
-                        </div>
+                      </div>
                       <div className="px-4 py-5 bg-gray-50 shadow-sm rounded-lg overflow-hidden sm:p-6">
                         <dt className="text-sm font-medium text-gray-500 truncate">Last Order</dt>
                         <dd className="mt-1 text-3xl font-semibold text-gray-900">
@@ -397,8 +371,8 @@ export default function Customers() {
                         </dd>
                       </div>
                     </dl>
-                      </div>
-                    </div>
+                  </div>
+                </div>
 
                 {/* Order History */}
                 <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -409,14 +383,13 @@ export default function Customers() {
                     {customerOrders.length === 0 ? (
                       <div className="px-4 py-3 text-center text-gray-500">
                         No orders found
-                    </div>
+                      </div>
                     ) : (
                       customerOrders.map((order) => (
-                        <div 
-                          key={order.id} 
-                          className={`px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors duration-150 ${
-                            selectedOrder?.id === order.id ? 'bg-blue-50' : ''
-                          }`}
+                        <div
+                          key={order.id}
+                          className={`px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors duration-150 ${selectedOrder?.id === order.id ? 'bg-blue-50' : ''
+                            }`}
                           onClick={() => setSelectedOrder(order)}
                         >
                           <div className="flex justify-between items-center">
@@ -429,36 +402,35 @@ export default function Customers() {
                               </p>
                             </div>
                             <div className="flex items-center space-x-4">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                order.status === 'delivered' ? 'bg-green-100 text-green-800' :
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${order.status === 'delivered' ? 'bg-green-100 text-green-800' :
                                 order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                'bg-yellow-100 text-yellow-800'
-                              }`}>
+                                  'bg-yellow-100 text-yellow-800'
+                                }`}>
                                 {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                               </span>
                               <span className="text-sm font-medium text-gray-900">
                                 ${(order.total || 0).toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                  {selectedOrder?.id === order.id && (
-                    <div className="mt-3 pt-3 border-t border-gray-200">
-                      <div className="space-y-2">
-                        <h4 className="text-sm font-medium text-gray-900">Order Details</h4>
-                        {order.items?.map((item, index) => (
-                          <div key={index} className="flex justify-between text-sm">
-                            <span className="text-gray-600">{item.name} x{item.quantity}</span>
-                            <span className="text-gray-900">${(item.price * item.quantity).toFixed(2)}</span>
+                              </span>
+                            </div>
                           </div>
-                        ))}
-                        <div className="flex justify-between text-sm font-medium pt-2">
-                          <span className="text-gray-900">Total</span>
-                          <span className="text-gray-900">${(order.total || 0).toFixed(2)}</span>
+                          {selectedOrder?.id === order.id && (
+                            <div className="mt-3 pt-3 border-t border-gray-200">
+                              <div className="space-y-2">
+                                <h4 className="text-sm font-medium text-gray-900">Order Details</h4>
+                                {order.items?.map((item, index) => (
+                                  <div key={index} className="flex justify-between text-sm">
+                                    <span className="text-gray-600">{item.name} x{item.quantity}</span>
+                                    <span className="text-gray-900">${(item.price * item.quantity).toFixed(2)}</span>
+                                  </div>
+                                ))}
+                                <div className="flex justify-between text-sm font-medium pt-2">
+                                  <span className="text-gray-900">Total</span>
+                                  <span className="text-gray-900">${(order.total || 0).toFixed(2)}</span>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
                       ))
                     )}
                   </div>
